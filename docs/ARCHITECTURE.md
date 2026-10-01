@@ -1,0 +1,36 @@
+# Architecture — version 0.1.0
+
+Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
+
+| Module           | Responsabilité                                                        |
+| ---------------- | --------------------------------------------------------------------- |
+| src/main.js      | Navigation, formulaires, brouillons et commandes utilisateur          |
+| src/domain.js    | États, règles de préparation, estimation, empreinte d'annonce         |
+| src/storage.js   | Transactions IndexedDB                                                |
+| src/catalog.js   | TCGdex et OCR Tesseract.js                                            |
+| src/photos.js    | Import d'originaux, contrôles d'éclairage/résolution, téléchargements |
+| src/vision.js    | Appel du serveur IA, sans clé fournisseur                             |
+| server/index.js  | Fichiers construits, contrôle d'accès/origine, limites, API           |
+| server/vision.js | Validation photos et appel Responses structuré                        |
+
+## Modèle local
+
+Chaque exemplaire possède un UUID, des photos originales, des attributs confirmés, des observations de prix, un brouillon et un historique. La référence catalogue et la variante sont conservées distinctement de l'UUID physique. Deux exemplaires identiques peuvent donc être vendus séparément.
+
+Une observation contient sa source, date, montant EUR hors frais, type, référence/variante/langue, état et confirmation du vendeur. L'estimation exclut les données incompatibles, vieilles de plus de 90 jours, dupliquées et les agrégats. Elle calcule une fourchette interquartile sur au moins trois observations d'un même marché et type. Les ventes vérifiées sont privilégiées si leur échantillon est suffisant. Pas de pondération temporelle fine dans cette version.
+
+Une empreinte des faits de la carte évite le téléchargement et la confirmation de publication d'un brouillon périmé après modification du prix, de l'état, des photos ou de la référence. Le texte corrigé par le vendeur ne change pas cette empreinte. La régénération demande accord avant d'écraser les corrections.
+
+## Sources externes
+
+TCGdex : https://tcgdex.dev/rest/cards et https://tcgdex.dev/rest/card. Les tendances proviennent du champ pricing.cardmarket ; leur présence ne garantit pas le prix d'une langue/variante/condition précise. L'API propose des données publiques ; leur disponibilité et conditions doivent être suivies.
+
+OCR : https://github.com/naptha/tesseract.js. Traitement dans le navigateur, avec moteur et modèles français/anglais servis par l’application après npm ci. Il s'agit de lecture de texte, sans évaluation d'état ou certification. Les candidats doivent être confirmés.
+
+IA optionnelle : https://developers.openai.com/api/docs/guides/images-vision et https://developers.openai.com/api/docs/guides/structured-outputs. Recto/verso envoyés seulement après accord utilisateur. La réponse contient identité lisible, état suggéré, défauts, confiance et besoin de meilleures photos. Aucune publication déclenchée par la réponse.
+
+Vinted : liens de recherche et création d'annonce, copier-coller et export ZIP. Aucune API privée, collecte automatisée, session partagée ou publication automatique.
+
+## Limites
+
+Pas de comptes, synchronisation cloud, traitement par lots, gradation professionnelle, garantie d'authenticité ou déploiement public fourni. La précision de l'OCR et de l'IA sur un corpus de vraies cartes n'est pas encore mesurée. L'analyse du flou et des reflets est guidée humainement ; les contrôles photo automatisés ne mesurent que luminosité et résolution.

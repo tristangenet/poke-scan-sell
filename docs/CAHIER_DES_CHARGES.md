@@ -55,6 +55,7 @@ Sources interchangeables : données Cardmarket accessibles et autorisées, donn�
 Chaque observation conserve : source, URL si disponible, date de collecte et date de transaction si connue, référence, langue, variante, état, montant, devise et frais inclus/exclus.
 
 Distinguer :
+
 - Prix demandé : montant d'une annonce.
 - Vente réalisée vérifiée : montant final connu d'une transaction.
 - Indicateur de marché : agrégat fourni par une source.
@@ -88,6 +89,7 @@ Module indépendant, activé uniquement après validation d'un moyen autorisé.
 Séquence : ouvrir Vinted ou l'interface autorisée ; vérifier le compte ; transférer les photos ; renseigner texte, prix, catégorie, état et attributs ; valider les champs obligatoires ; publier ; récupérer identifiant/URL ; confirmer l'existence de l'annonce avant le statut Publiée.
 
 Modes :
+
 1. Validation avant publication.
 2. Publication automatique activée préalablement par l'utilisateur, selon des règles configurables.
 
@@ -124,6 +126,7 @@ Aucune pile technique n'est imposée à ce stade : documenter le choix après le
 ## 14. Recette
 
 Objectifs à mesurer sur un jeu distinct des données d'ajustement :
+
 - Référence exacte : objectif 95 % sur 200 cartes du périmètre avec photos conformes ; identité complète, variante incluse.
 - Ambiguïtés de variante : demande de confirmation.
 - Verso absent/photos insuffisantes : pas de validation automatique de l'état.

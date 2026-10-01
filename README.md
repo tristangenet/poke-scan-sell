@@ -1,39 +1,67 @@
 # Poke Scan Sell
 
-Photographier une carte Pokémon, identifier sa référence et sa variante, confirmer son état, estimer son prix et préparer sa vente sur Vinted.
+Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, vérifier, estimer et préparer les annonces.
 
-## Statut
+![Interface de l'application](docs/screenshots/desktop.png)
 
-**Projet initialisé : documentation et plan de développement. L'application n'est pas encore implémentée.**
-Aucune reconnaissance IA, estimation en direct ni publication automatique n'est actuellement opérationnelle.
+## Version 0.1.0
 
-## Parcours cible
+Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
 
-1. Capturer recto et verso.
-2. Confirmer référence, variante, langue et état.
-3. Consulter des prix sourcés et choisir le prix.
-4. Générer et vérifier l'annonce.
-5. Publier via une intégration Vinted autorisée ; utiliser le transfert manuel assisté si cet accès manque.
-6. Conserver le lien et le statut dans l'inventaire.
+Fonctionnalités livrées :
+
+- Capture/import recto, verso et détails (JPEG/PNG/WebP).
+- Lecture OCR locale avec Tesseract.js et recherche dans le catalogue TCGdex.
+- Confirmation de l'extension et de la variante ; correction manuelle.
+- Évaluation guidée de l'état et **analyse IA optionnelle** du recto/verso via un serveur OpenAI.
+- Tendances Cardmarket relayées par TCGdex, clairement distinguées d'une estimation selon état.
+- Comparables saisis et confirmés par le vendeur, calcul de fourchette et stratégies de prix.
+- Annonces modifiables, copier-coller et dossier ZIP avec les photos originales.
+- Ouverture de Vinted et suivi manuel de la publication/vente.
+- Sauvegarde JSON, restauration sans écrasement, recherche, filtres et archivage.
+
+**La collecte automatique des comparables par état, le remplissage et la publication automatiques sur Vinted ne sont pas disponibles.** Ces fonctions restent dépendantes d'accès autorisés. Aucun prix ou résultat de publication n'est simulé.
+
+## Démarrer
+
+Node.js 24 LTS recommandé.
+
+```bash
+npm ci
+npm run dev
+```
+
+Ouvrir http://localhost:5173. Le catalogue nécessite une connexion Internet. Les modèles OCR sont inclus après npm ci.
+
+Pour servir la version construite :
+
+```bash
+npm start
+```
+
+Ouvrir http://localhost:3001. L'application fonctionne sans clé API en mode OCR et saisie guidée.
+
+## Activer l'analyse IA
+
+Suivre [les instructions d'installation](docs/INSTALLATION.md). La clé API reste côté serveur ; un code d'accès protège les appels. Aucune photo n'est envoyée sans confirmation dans l'interface. Les suggestions d'identité et d'état doivent être vérifiées par le vendeur.
+
+## Vérifier
+
+```bash
+npm run build
+npm test
+npx playwright install chromium
+npm run test:e2e
+```
+
+Tests de calcul, de refus des données incompatibles, du serveur, et parcours navigateur complet. Voir le [rapport de validation](docs/VALIDATION.md) pour les limites des vérifications.
 
 ## Documentation
 
+- [Installation et configuration](docs/INSTALLATION.md)
+- [Architecture et données](docs/ARCHITECTURE.md)
 - [Cahier des charges](docs/CAHIER_DES_CHARGES.md)
-- [Feuille de route](docs/ROADMAP.md)
-- [Tâches de développement](../../issues)
+- [Feuille de route et état réel](docs/ROADMAP.md)
+- [Tâches GitHub](https://github.com/tristangenet/poke-scan-sell/issues)
 
-## Contraintes structurantes
-
-- Prix demandé, vente réalisée vérifiée et indicateur agrégé sont distincts.
-- Ne pas inventer de prix, de variante ou de certification d'authenticité.
-- L'état photographique doit être confirmé et les défauts conservés sur les photos.
-- L'accès API Cardmarket et l'automatisation Vinted ne sont pas acquis.
-- Aucun contournement des contrôles de sécurité ; aucune publication en double après incident.
-
-## Développement
-
-Commencer par les tâches de faisabilité avant de choisir la pile technique.
-Il n'existe pas encore de commande d'installation ou de lancement. Les documenter avec la première implémentation.
-Ne jamais committer de secrets, de cookies de session, de photos personnelles ou d'exports de comptes.
-
-Projet indépendant, non affilié à Pokémon, Vinted ou Cardmarket.
+Projet indépendant, non affilié à Pokémon, Vinted, Cardmarket ou TCGdex. Ne jamais committer clés, cookies, photos personnelles ou sauvegardes d'inventaire.

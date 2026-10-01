@@ -1,0 +1,44 @@
+{
+  "name": "poke-scan-sell",
+  "version": "0.1.0",
+  "description": "Photographier une carte Pokémon, identifier sa référence et sa variante, confirmer son état, estimer son prix et préparer sa vente sur Vinted.",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test",
+    "server": "node --env-file-if-exists=.env server/index.js",
+    "start": "npm run build && npm run server",
+    "prepare:ocr": "node scripts/prepare-ocr.mjs",
+    "postinstall": "npm run prepare:ocr",
+    "format": "prettier --write src server scripts tests docs/*.md README.md *.js package.json index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tristangenet/poke-scan-sell.git"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/tristangenet/poke-scan-sell/issues"
+  },
+  "homepage": "https://github.com/tristangenet/poke-scan-sell#readme",
+  "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "jszip": "^3.10.2",
+    "tesseract.js": "^7.0.0",
+    "vite": "^8.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "agent-browser": "^0.38.1",
+    "prettier": "^3.9.9"
+  },
+  "private": true
+}

@@ -12,3 +12,7 @@ __pycache__/
 .local/
 uploads/
 private-data/
+
+test-results/
+playwright-report/
+public/ocr/
