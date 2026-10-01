@@ -153,7 +153,7 @@ function renderEditor() {
   if (quickMode) return renderQuickEditor();
   const e = estimate(active);
   shell(
-    `<div class="editor-heading"><div><div class="eyebrow">${esc(active.name || "NOUVEL EXEMPLAIRE")}</div><h1>Préparons votre annonce.</h1>${btn("Revenir au mode rapide", "quick-mode", "text-button")}</div><div class="saved"><span class="dot"></span> Sauvegarde locale ${badge(active.status)}</div></div><div class="steps" role="navigation" aria-label="Étapes de préparation">${steps.map((s, i) => `<button data-action="step" data-step="${i}" class="step ${i === step ? "current" : ""}"><span>${i + 1}</span>${s}</button>`).join("")}</div><div class="editor-layout"><section class="editor-main">${[photosView, identityView, conditionView, priceView, listingView][step](e)}<div class="step-footer">${btn(step ? "← Étape précédente" : "← Ma collection", step ? "previous" : "inventory", "secondary")}${step < 4 ? btn("Continuer " + icon("arrow"), "next") : ""}</div></section><aside class="summary panel"><span class="eyebrow">VOTRE EXEMPLAIRE</span><div class="summary-image">${cardVisual(active)}</div><h3>${esc(active.name || "Carte à identifier")}</h3><p>${esc(active.set || "Extension inconnue")}<br>${esc(active.number || "Numéro à renseigner")} · ${esc(active.language.toUpperCase())}</p><div class="summary-line"><span>Variante</span><strong>${esc(active.variant || "À confirmer")}</strong></div><div class="summary-line"><span>État</span><strong>${esc(active.condition || "À vérifier")}</strong></div><div class="summary-line"><span>Prix choisi</span><strong>${+active.price > 0 ? money(+active.price) : "—"}</strong></div><p class="muted">Un exemplaire unique.<br>Vos modifications sont enregistrées à chaque changement de champ.</p></aside></div>`,
+    `<div class="editor-heading"><div><div class="eyebrow">${esc(active.name || "NOUVEL EXEMPLAIRE")}</div><h1>Préparons votre annonce.</h1>${btn("Revenir au mode rapide", "quick-mode", "text-button")}</div><div class="saved"><span class="dot"></span> Sauvegarde locale ${badge(active.status)}</div></div><div class="steps" role="navigation" aria-label="Étapes de préparation">${steps.map((s, i) => `<button data-action="step" data-step="${i}" class="step ${i === step ? "current" : ""}"><span>${i + 1}</span>${s}</button>`).join("")}</div><div class="editor-layout"><section class="editor-main">${[photosView, identityView, conditionView, priceView, listingView][step](e)}<div class="step-footer">${btn(step ? "← Étape précédente" : "← Ma collection", step ? "previous" : "inventory", "secondary")}${step < 4 ? btn("Continuer " + icon("arrow"), "next") : ""}</div></section><aside class="summary panel"><span class="eyebrow">VOTRE EXEMPLAIRE</span><div class="summary-image">${cardVisual(active)}</div><h3>${esc(active.name || "Carte à identifier")}</h3><p>${esc(active.set || "Extension non précisée")}<br>${esc(active.number || "Numéro à renseigner")} · ${esc(active.language.toUpperCase())}</p><div class="summary-line"><span>Variante</span><strong>${esc(active.variant || "Non précisée")}</strong></div><div class="summary-line"><span>État</span><strong>${esc(active.condition || "À vérifier")}</strong></div><div class="summary-line"><span>Prix choisi</span><strong>${+active.price > 0 ? money(+active.price) : "—"}</strong></div><p class="muted">Un exemplaire unique.<br>Vos modifications sont enregistrées à chaque changement de champ.</p></aside></div>`,
   );
 }
 function renderQuickEditor() {
@@ -166,7 +166,7 @@ function renderQuickEditor() {
   shell(`<div class="editor-heading"><div><div class="eyebrow">MODE RAPIDE</div><h1>Deux photos. Une annonce.</h1><p>Photographiez, laissez l’application préparer, puis vérifiez.</p></div><div class="saved">${badge(active.status)}</div></div>
     <div class="quick-layout"><section>
     ${!detected ? photosView() : `<details class="panel"><summary>Vos photos (${active.photos.length}) · modifier</summary>${photosView()}</details>`}
-    <section class="panel"><h2>Préparation automatique</h2><p>Lecture du nom et du numéro, recherche de l’édition et chargement de la tendance Cardmarket disponible.</p>
+    <section class="panel"><h2>Préparation automatique</h2><p>Lecture du nom et du numéro, puis chargement de la tendance Cardmarket si la référence catalogue est identifiée.</p>
     ${select("Langue de la carte", "language", active.language, [
       ["fr", "Français"],
       ["en", "Anglais"],
@@ -177,8 +177,9 @@ function renderQuickEditor() {
     ${
       detected
         ? `<section class="panel"><div class="eyebrow">VÉRIFICATION FINALE</div><h2>Vérifiez, ajustez, puis validez.</h2>
-    ${!active.catalogId ? `<p class="notice amber">${esc(quickMessage || "Reprenez une photo lisible du nom et du numéro.")}</p>` : `<p class="notice">Carte identifiée automatiquement · ${esc(active.catalogId)}</p>`}
-    <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}${input("Extension", "set", active.set)}${active.variantOptions?.length ? select("Variante à vérifier", "variant", active.variant, [["", "Choisir"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition", "variant", active.variant)}</div>
+    ${!active.catalogId ? `<p class="notice ${active.name && active.number ? "" : "amber"}">${esc(quickMessage || (active.name && active.number ? "Nom et numéro renseignés. L’édition est facultative." : "Reprenez une photo lisible du nom et du numéro."))}</p>` : `<p class="notice">Carte identifiée automatiquement · ${esc(active.catalogId)}</p>`}
+    <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}</div>
+    <details><summary>Extension et variante (facultatif)</summary><div class="form-grid">${input("Extension (facultatif)", "set", active.set)}${active.variantOptions?.length ? select("Variante (facultatif)", "variant", active.variant, [["", "Non précisée"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition (facultatif)", "variant", active.variant)}</div></details>
     <div class="form-grid">${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}${input("État sur Vinted", "vintedCondition", active.vintedCondition)}</div>
     ${active.aiAnalysis ? `<p class="notice">Proposition IA : ${esc(active.aiAnalysis.condition)} · ${esc(active.aiAnalysis.confidence)}. ${active.aiAnalysis.defects.map(esc).join(" ; ")}${active.aiAnalysis.warnings.map((w) => `<br>${esc(w)}`).join("")}</p>` : '<p class="muted">Sans IA configurée, l’état reste à choisir après examen des deux faces.</p>'}
     <label class="field">Défauts constatés<textarea data-field="defectNotes" rows="2">${esc(active.defectNotes)}</textarea></label>
@@ -189,7 +190,7 @@ function renderQuickEditor() {
     ${input("Emballage réellement utilisé", "packaging", active.packaging, "text", 'placeholder="Ex. sleeve et protection rigide"')}
     <p class="muted">L’emballage et le libellé Vinted seront mémorisés pour vos prochaines cartes dans ce navigateur. Vérifiez qu’ils conviennent à cet exemplaire.</p>
     ${btn(active.title ? "Valider et actualiser mon annonce" : "Valider ma carte et créer l’annonce", "quick-validate", "primary", !hasPhotos ? "disabled" : "")}
-    <p class="muted">En validant, vous confirmez l’identité, l’édition, l’état et les défauts après avoir vérifié les deux faces.</p></section>`
+    <p class="muted">En validant, vous confirmez le nom, le numéro, l’état et les défauts après avoir vérifié les deux faces.</p></section>`
         : ""
     }
     ${active.title ? listingView(true) : ""}
@@ -204,6 +205,10 @@ async function prepareQuickCard(useAI) {
   active.market = null;
   active.variantOptions = [];
   active.aiAnalysis = null;
+  active.set = "";
+  active.variant = "";
+  active.ocrText = "";
+  candidates = [];
   let result;
   let aiVariant = "";
   let detectedNumber = "";
@@ -289,7 +294,7 @@ function photosView() {
     )}<p class="notice">Les originaux sont conservés. Aucun filtre n’efface les défauts de votre carte. Vérifiez vous-même la netteté avant de continuer.</p></div>`;
 }
 function identityView() {
-  return `<div class="panel"><div class="eyebrow">ÉTAPE 02</div><h2>La bonne carte. La bonne édition.</h2><p>Lisez le texte de la photo ou recherchez dans le catalogue, puis confirmez la référence.</p>${btn(icon("scan") + " Lire la photo avec l’OCR", "ocr", "primary", !active.photos.some((p) => p.side === "front") ? "disabled" : "")}<p class="muted">Lecture locale du texte · premier chargement des modèles nécessaire · pas de reconnaissance d’authenticité.</p><div id="job-status" role="status"></div><div class="form-grid">${input("Nom de la carte", "name", active.name)}${input("Numéro (ex. 4/102)", "number", active.number)}${select(
+  return `<div class="panel"><div class="eyebrow">ÉTAPE 02</div><h2>Identifiez votre carte.</h2><p>Lisez le texte de la photo ou recherchez dans le catalogue, puis confirmez la référence.</p>${btn(icon("scan") + " Lire la photo avec l’OCR", "ocr", "primary", !active.photos.some((p) => p.side === "front") ? "disabled" : "")}<p class="muted">Lecture locale du texte · premier chargement des modèles nécessaire · pas de reconnaissance d’authenticité.</p><div id="job-status" role="status"></div><div class="form-grid">${input("Nom de la carte", "name", active.name)}${input("Numéro (ex. 4/102)", "number", active.number)}${select(
     "Langue",
     "language",
     active.language,
@@ -297,7 +302,7 @@ function identityView() {
       ["fr", "Français"],
       ["en", "Anglais"],
     ],
-  )}${input("Extension", "set", active.set)}</div><div class="actions">${btn("Rechercher dans le catalogue", "search", "secondary")}</div><div class="candidates">${candidates.map((c) => `<button class="candidate" data-action="candidate" data-id="${esc(c.id)}">${c.image ? `<img src="${esc(c.image)}/low.webp" alt="Illustration catalogue ${esc(c.name)}" loading="lazy">` : ""}<strong>${esc(c.name)}</strong><small>${esc(c.localId)} · ${esc(c.id)}</small><span>Choisir cette référence</span></button>`).join("")}</div>${active.catalogId ? `<p class="notice">Référence catalogue : ${esc(active.catalogId)}. Comparez l’illustration et les indications de votre carte. Une image catalogue n’est pas une photo de votre exemplaire.</p>` : ""}<div class="form-grid">${input("Variante / édition exacte", "variant", active.variant, "text", 'placeholder="Holo, reverse, 1re édition…"')}${active.variantOptions?.length ? `<label class="field">Variantes du catalogue<select id="catalog-variant"><option value="">Choisir après vérification</option>${active.variantOptions.map((v) => `<option ${active.variant === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>` : ""}</div><label class="check-row"><input type="checkbox" data-field="identityConfirmed" ${active.identityConfirmed ? "checked" : ""}> J’ai vérifié le nom, le numéro, l’extension, la langue et la variante sur ma carte.</label>${active.ocrText ? `<details><summary>Texte lu par l’OCR</summary><pre>${esc(active.ocrText)}</pre></details>` : ""}</div>`;
+  )}${input("Extension (facultatif)", "set", active.set)}</div><div class="actions">${btn("Rechercher dans le catalogue", "search", "secondary")}</div><div class="candidates">${candidates.map((c) => `<button class="candidate" data-action="candidate" data-id="${esc(c.id)}">${c.image ? `<img src="${esc(c.image)}/low.webp" alt="Illustration catalogue ${esc(c.name)}" loading="lazy">` : ""}<strong>${esc(c.name)}</strong><small>${esc(c.localId)} · ${esc(c.id)}</small><span>Choisir cette référence</span></button>`).join("")}</div>${active.catalogId ? `<p class="notice">Référence catalogue : ${esc(active.catalogId)}. Comparez l’illustration et les indications de votre carte. Une image catalogue n’est pas une photo de votre exemplaire.</p>` : ""}<div class="form-grid">${input("Variante / édition (facultatif)", "variant", active.variant, "text", 'placeholder="Holo, reverse, 1re édition…"')}${active.variantOptions?.length ? `<label class="field">Variantes du catalogue<select id="catalog-variant"><option value="">Choisir après vérification</option>${active.variantOptions.map((v) => `<option ${active.variant === v ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>` : ""}</div><label class="check-row"><input type="checkbox" data-field="identityConfirmed" ${active.identityConfirmed ? "checked" : ""}> J’ai vérifié le nom, le numéro et la langue sur ma carte. L’extension et la variante sont facultatives.</label>${active.ocrText ? `<details><summary>Texte lu par l’OCR</summary><pre>${esc(active.ocrText)}</pre></details>` : ""}</div>`;
 }
 function conditionView() {
   return `<div class="panel"><div class="eyebrow">ÉTAPE 03</div><h2>Un état décrit avec précision.</h2><p>Vérifiez votre carte à l’œil nu. Utilisez la liste de contrôle ci-dessous ou demandez une analyse IA optionnelle, puis confirmez votre évaluation.</p>${!active.photos.some((p) => p.side === "back") ? '<p class="notice amber">Ajoutez le verso avant de confirmer l’état.</p>' : ""}${btn("Analyser le recto et le verso par IA", "vision", "secondary", !active.photos.some((p) => p.side === "front") || !active.photos.some((p) => p.side === "back") ? "disabled" : "")}<p class="muted">Nécessite un serveur configuré. Vos deux photos seront envoyées à OpenAI après confirmation.</p>${active.aiAnalysis ? `<div class="notice"><strong>Proposition IA : ${esc(active.aiAnalysis.condition)} · confiance ${esc(active.aiAnalysis.confidence)}</strong><p>${active.aiAnalysis.defects.map(esc).join("<br>") || "Aucun défaut visible signalé ; vérifier à l’œil nu."}</p>${active.aiAnalysis.warnings.map((w) => `<p>${esc(w)}</p>`).join("")}</div>` : ""}<div class="defect-grid">${["Bords blanchis", "Coins usés", "Rayures", "Pliure", "Humidité", "Taches"].map((d) => `<label class="check-row"><input type="checkbox" data-defect="${d}" ${active.defects.includes(d) ? "checked" : ""}>${d}</label>`).join("")}</div><label class="field">Autres défauts et précisions<textarea data-field="defectNotes" rows="3" placeholder="Ex. petit point blanc au dos, coin inférieur droit…">${esc(active.defectNotes)}</textarea></label><div class="notice">Orientation d’après vos observations : <strong>${suggestedCondition(active.defects)}</strong>. Ne vaut pas notation professionnelle. Sans défaut déclaré, vérifiez tout de même les micro-rayures.</div>${select("État retenu par le vendeur", "condition", active.condition, [["", "Choisir un état"], ...Object.entries(CONDITIONS)])}<label class="check-row"><input type="checkbox" data-field="conditionConfirmed" ${active.conditionConfirmed ? "checked" : ""} ${!active.photos.some((p) => p.side === "back") || !active.photos.some((p) => p.side === "front") ? "disabled" : ""}> J’ai vérifié les deux faces et confirmé l’état et les défauts.</label><a class="inline-link" href="https://help.cardmarket.com/fr/CardCondition" target="_blank" rel="noopener noreferrer">Consulter le guide des états Cardmarket ↗</a></div>`;
@@ -393,7 +398,7 @@ async function applyCatalog(id, loaded = null) {
   candidates = [];
   await persist();
   render();
-  toast("Référence sélectionnée. Confirmez la variante de votre exemplaire.");
+  toast("Carte identifiée. Vérifiez le nom et le numéro de votre exemplaire.");
 }
 async function identifyFromEvidence(evidence) {
   const resolution = await resolveCatalogue(
@@ -406,6 +411,14 @@ async function identifyFromEvidence(evidence) {
     },
   );
   if (resolution.card) await applyCatalog(resolution.card.id, resolution.card);
+  else if (resolution.identity) {
+    active.name = resolution.identity.name;
+    active.number = resolution.identity.number;
+    active.set = "";
+    active.variant = "";
+    clearIdentity();
+    candidates = [];
+  }
   return resolution;
 }
 function setMarket(result) {
@@ -886,12 +899,10 @@ app.addEventListener("change", (event) =>
       if (
         f === "identityConfirmed" &&
         el.checked &&
-        (!active.name || !active.number || !active.set || !active.variant)
+        (!active.name.trim() || !active.number.trim())
       ) {
         active.identityConfirmed = false;
-        throw new Error(
-          "Renseignez le nom, le numéro, l’extension et la variante.",
-        );
+        throw new Error("Renseignez le nom et le numéro de la carte.");
       }
       await persist();
       if (

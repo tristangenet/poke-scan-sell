@@ -31,6 +31,13 @@ async function addPhotos(page) {
 async function catalogue(page, ambiguous = false) {
   await page.route("https://api.tcgdex.net/**", (route) => {
     const id = route.request().url().split("/").pop();
+    if (id === "sets")
+      return route.fulfill({
+        json: [
+          { id: "base1", name: "Set de Base", cardCount: { official: 102 } },
+          { id: "other", name: "Réédition", cardCount: { official: 102 } },
+        ],
+      });
     return route.fulfill({
       json:
         id === "cards"
@@ -136,7 +143,7 @@ test("mode rapide : OCR, référence, prix, une validation et préférences réu
   );
   expect(errors).toEqual([]);
 });
-test("une édition ambiguë n’est pas sélectionnée automatiquement", async ({
+test("une édition inconnue n’empêche pas de créer l’annonce à partir du nom et du numéro", async ({
   page,
 }) => {
   test.setTimeout(60000);
@@ -148,12 +155,44 @@ test("une édition ambiguë n’est pas sélectionnée automatiquement", async (
     .click();
   await addPhotos(page);
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
-  await expect(page.locator("#job-status")).toContainText("ne distingue pas", {
-    timeout: 45000,
-  });
+  await expect(page.locator("#job-status")).toContainText(
+    "vous pouvez préparer l’annonce",
+    {
+      timeout: 45000,
+    },
+  );
   await expect(page.locator(".candidate")).toHaveCount(0);
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
+  await expect(page.locator('[data-field="set"]')).toHaveValue("");
+  await expect(page.locator('[data-field="variant"]')).toHaveValue("");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
+  await expect(
+    page.getByRole("button", {
+      name: "Utiliser cette tendance comme point de départ",
+    }),
+  ).toHaveCount(0);
+  await page.locator('[data-field="condition"]').selectOption("EX");
+  await page.locator('[data-field="vintedCondition"]').fill("Très bon état");
+  await page.locator('[data-field="vintedCondition"]').blur();
+  await page.locator('[data-field="price"]').fill("45");
+  await page.locator('[data-field="price"]').blur();
+  await page
+    .locator('[data-field="packaging"]')
+    .fill("Sleeve et protection rigide");
+  await page.locator('[data-field="packaging"]').blur();
+  await page
+    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
+    .click();
+  await expect(page.locator('[data-field="title"]')).toHaveValue(
+    "Pokémon Dracaufeu 4/102 — FR",
+  );
+  await expect(page.locator('[data-field="description"]')).not.toHaveValue(
+    /Extension|Variante/,
+  );
+  await expect(
+    page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
+  ).toBeEnabled();
 });
 
 test("mode IA configuré : identité et état proposés en une préparation", async ({

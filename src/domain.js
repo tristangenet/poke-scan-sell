@@ -160,8 +160,8 @@ export function cardKey(c) {
 }
 export function readyErrors(c) {
   const errors = [];
-  if (!c.name || !c.number || !c.set || !c.variant || !c.identityConfirmed)
-    errors.push("Confirmer la référence, l’extension et la variante.");
+  if (!c.name.trim() || !c.number.trim() || !c.identityConfirmed)
+    errors.push("Confirmer le nom et le numéro de la carte.");
   if (
     !c.photos.some((p) => p.side === "front") ||
     !c.photos.some((p) => p.side === "back")
@@ -179,16 +179,25 @@ export function readyErrors(c) {
 }
 export function generateListing(c) {
   return {
-    title: `Pokémon ${c.name} ${c.number} — ${c.set} — ${c.language.toUpperCase()} — ${c.variant}`,
+    title: [
+      `Pokémon ${c.name} ${c.number}`,
+      c.set.trim(),
+      c.language.toUpperCase(),
+      c.variant.trim(),
+    ]
+      .filter(Boolean)
+      .join(" — "),
     description: [
       `Carte Pokémon ${c.name} — ${c.number}.`,
-      `Extension : ${c.set}.`,
-      `Langue : ${c.language.toUpperCase()}. Variante : ${c.variant}.`,
+      c.set.trim() ? `Extension : ${c.set}.` : "",
+      `Langue : ${c.language.toUpperCase()}.${c.variant.trim() ? ` Variante : ${c.variant}.` : ""}`,
       `État évalué par le vendeur : ${CONDITIONS[c.condition] || c.condition}.`,
       `Défauts constatés : ${[...c.defects, c.defectNotes].filter(Boolean).join(", ") || "aucun défaut signalé après vérification du vendeur"}.`,
       "Les photos montrent l’exemplaire proposé à la vente.",
       `Protection et expédition : ${c.packaging}.`,
-    ].join("\n"),
+    ]
+      .filter(Boolean)
+      .join("\n"),
   };
 }
 export function safeUrl(value, host) {

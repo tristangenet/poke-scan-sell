@@ -67,6 +67,14 @@ export function resolveReference(cards, evidence, complete = true) {
     matches = matches.filter(
       (c) => Number(c.set?.cardCount?.official) === Number(total),
     );
+  // A shared name and collector number are enough for a listing, even when
+  // the exact catalogue reference (and therefore its price) remains unknown.
+  const identity =
+    number &&
+    matches.length &&
+    new Set(matches.map((c) => normalize(c.name))).size === 1
+      ? { name: matches[0].name, number: String(evidence.number).trim() }
+      : null;
   const extension = evidence.set
     ? matches.filter(
         (c) =>
@@ -83,8 +91,10 @@ export function resolveReference(cards, evidence, complete = true) {
   if (evidence.set && !extension.length)
     return {
       card: null,
-      reason:
-        "Le nom, le numéro et l’extension lus ne concordent pas. Reprenez une photo nette du recto.",
+      identity,
+      reason: identity
+        ? "Nom et numéro reconnus. L’édition est facultative : vous pouvez préparer l’annonce."
+        : "Identification incomplète : photographiez le nom et le numéro de la carte sans reflet.",
     };
   if (extension.length) matches = extension;
   if (matches.length === 1 && (number || extension.length)) {
@@ -96,9 +106,9 @@ export function resolveReference(cards, evidence, complete = true) {
   }
   return {
     card: null,
-    reason:
-      matches.length > 1
-        ? "Le scan ne distingue pas encore l’édition. Reprenez le recto avec le numéro, le symbole d’extension et les mentions du bas bien nets."
-        : "Identification incomplète : photographiez le nom et le numéro de la carte sans reflet.",
+    identity,
+    reason: identity
+      ? "Nom et numéro reconnus. L’édition est facultative : vous pouvez préparer l’annonce."
+      : "Identification incomplète : photographiez le nom et le numéro de la carte sans reflet.",
   };
 }

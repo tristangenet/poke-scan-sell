@@ -60,7 +60,7 @@ export async function resolveCatalogue(
   if (!unique.length) return resolveReference([], evidence);
   const metadata = new Map();
   let serviceError = "";
-  onProgress("Recherche de l’extension…");
+  onProgress("Recherche de la référence…");
   try {
     const sets = await get(`/${language}/sets`);
     if (!Array.isArray(sets))

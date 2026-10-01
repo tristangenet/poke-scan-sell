@@ -124,6 +124,26 @@ test("génération requiert identité état photos et prix", () => {
   assert.match(generateListing(c).description, /Protection rigide/);
   assert.doesNotMatch(generateListing(c).description, /authentique/i);
 });
+test("une annonce peut être créée sans extension ni variante, avec le nom et le numéro confirmés", () => {
+  const c = {
+    ...card,
+    catalogId: "",
+    set: "",
+    variant: "",
+    identityConfirmed: true,
+    conditionConfirmed: true,
+    photos: [{ side: "front" }, { side: "back" }],
+    price: 12,
+    vintedCondition: "Bon état",
+  };
+  assert.deepEqual(readyErrors(c), []);
+  const listing = generateListing(c);
+  assert.equal(listing.title, "Pokémon Dracaufeu 4/102 — FR");
+  assert.doesNotMatch(listing.description, /Extension|Variante|\n\n/);
+  for (const field of ["name", "number"])
+    assert.ok(readyErrors({ ...c, [field]: " " }).length > 0);
+  assert.ok(readyErrors({ ...c, identityConfirmed: false }).length > 0);
+});
 test("OCR conserve préfixes et numéro complet", () => {
   assert.equal(parseOCR("Pikachu\nTG01/TG30").number, "TG01/TG30");
 });

@@ -56,6 +56,31 @@ test("suffixe ex et noms courts sont distingués du nom de base et de mots plus 
     0,
   );
 });
+test("une édition inconnue conserve le nom et le numéro sans choisir une fiche catalogue", () => {
+  for (const set of ["", "Autre"]) {
+    const resolution = resolveReference([base, reprint], {
+      name: "Dracaufeu",
+      number: "4/102",
+      set,
+    });
+    assert.equal(resolution.card, null);
+    assert.deepEqual(resolution.identity, {
+      name: "Dracaufeu",
+      number: "4/102",
+    });
+    assert.match(resolution.reason, /vous pouvez préparer l’annonce/);
+    assert.doesNotMatch(resolution.reason, /Reprenez/);
+  }
+  assert.equal(
+    resolveReference([base, reprint], { name: "Dracaufeu" }).identity,
+    null,
+  );
+  assert.equal(
+    resolveReference([base, reprint], { name: "Dracaufeu", number: "5/102" })
+      .identity,
+    null,
+  );
+});
 test("ambiguïtés, contradictions et catalogue incomplet ne valident pas une carte arbitraire", () => {
   assert.equal(
     resolveReference([base, reprint], { name: "Dracaufeu", number: "4/102" })
