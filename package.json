@@ -1,7 +1,7 @@
 {
   "name": "poke-scan-sell",
-  "version": "0.1.0",
-  "description": "Photographier une carte Pokémon, identifier sa référence et sa variante, confirmer son état, estimer son prix et préparer sa vente sur Vinted.",
+  "version": "0.2.0",
+  "description": "Photographier une carte Pok\u00e9mon, identifier sa r\u00e9f\u00e9rence et sa variante, confirmer son \u00e9tat, estimer son prix et pr\u00e9parer sa vente sur Vinted.",
   "directories": {
     "doc": "docs"
   },

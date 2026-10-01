@@ -23,6 +23,8 @@ let cards = [],
   active = null,
   view = "dashboard",
   step = 0,
+  quickMode = true,
+  quickMessage = "",
   candidates = [],
   busy = false,
   query = "",
@@ -142,13 +144,137 @@ function renderSettings() {
 }
 function renderEditor() {
   if (!active) return;
+  if (quickMode) return renderQuickEditor();
   const e = estimate(active);
   shell(
-    `<div class="editor-heading"><div><div class="eyebrow">${esc(active.name || "NOUVEL EXEMPLAIRE")}</div><h1>Préparons votre annonce.</h1></div><div class="saved"><span class="dot"></span> Sauvegarde locale ${badge(active.status)}</div></div><div class="steps" role="navigation" aria-label="Étapes de préparation">${steps.map((s, i) => `<button data-action="step" data-step="${i}" class="step ${i === step ? "current" : ""}"><span>${i + 1}</span>${s}</button>`).join("")}</div><div class="editor-layout"><section class="editor-main">${[photosView, identityView, conditionView, priceView, listingView][step](e)}<div class="step-footer">${btn(step ? "← Étape précédente" : "← Ma collection", step ? "previous" : "inventory", "secondary")}${step < 4 ? btn("Continuer " + icon("arrow"), "next") : ""}</div></section><aside class="summary panel"><span class="eyebrow">VOTRE EXEMPLAIRE</span><div class="summary-image">${cardVisual(active)}</div><h3>${esc(active.name || "Carte à identifier")}</h3><p>${esc(active.set || "Extension inconnue")}<br>${esc(active.number || "Numéro à renseigner")} · ${esc(active.language.toUpperCase())}</p><div class="summary-line"><span>Variante</span><strong>${esc(active.variant || "À confirmer")}</strong></div><div class="summary-line"><span>État</span><strong>${esc(active.condition || "À vérifier")}</strong></div><div class="summary-line"><span>Prix choisi</span><strong>${+active.price > 0 ? money(+active.price) : "—"}</strong></div><p class="muted">Un exemplaire unique.<br>Vos modifications sont enregistrées à chaque changement de champ.</p></aside></div>`,
+    `<div class="editor-heading"><div><div class="eyebrow">${esc(active.name || "NOUVEL EXEMPLAIRE")}</div><h1>Préparons votre annonce.</h1>${btn("Revenir au mode rapide", "quick-mode", "text-button")}</div><div class="saved"><span class="dot"></span> Sauvegarde locale ${badge(active.status)}</div></div><div class="steps" role="navigation" aria-label="Étapes de préparation">${steps.map((s, i) => `<button data-action="step" data-step="${i}" class="step ${i === step ? "current" : ""}"><span>${i + 1}</span>${s}</button>`).join("")}</div><div class="editor-layout"><section class="editor-main">${[photosView, identityView, conditionView, priceView, listingView][step](e)}<div class="step-footer">${btn(step ? "← Étape précédente" : "← Ma collection", step ? "previous" : "inventory", "secondary")}${step < 4 ? btn("Continuer " + icon("arrow"), "next") : ""}</div></section><aside class="summary panel"><span class="eyebrow">VOTRE EXEMPLAIRE</span><div class="summary-image">${cardVisual(active)}</div><h3>${esc(active.name || "Carte à identifier")}</h3><p>${esc(active.set || "Extension inconnue")}<br>${esc(active.number || "Numéro à renseigner")} · ${esc(active.language.toUpperCase())}</p><div class="summary-line"><span>Variante</span><strong>${esc(active.variant || "À confirmer")}</strong></div><div class="summary-line"><span>État</span><strong>${esc(active.condition || "À vérifier")}</strong></div><div class="summary-line"><span>Prix choisi</span><strong>${+active.price > 0 ? money(+active.price) : "—"}</strong></div><p class="muted">Un exemplaire unique.<br>Vos modifications sont enregistrées à chaque changement de champ.</p></aside></div>`,
   );
 }
+function renderQuickEditor() {
+  const hasPhotos = ["front", "back"].every((side) =>
+    active.photos.some((p) => p.side === side),
+  );
+  const e = estimate(active);
+  const detected =
+    active.catalogId || active.ocrText || active.aiAnalysis || active.name;
+  shell(`<div class="editor-heading"><div><div class="eyebrow">MODE RAPIDE</div><h1>Deux photos. Une annonce.</h1><p>Photographiez, laissez l’application préparer, puis vérifiez.</p></div><div class="saved">${badge(active.status)}</div></div>
+    <div class="quick-layout"><section>
+    ${!detected ? photosView() : `<details class="panel"><summary>Vos photos (${active.photos.length}) · modifier</summary>${photosView()}</details>`}
+    <section class="panel"><h2>Préparation automatique</h2><p>Lecture du nom et du numéro, recherche de l’édition et chargement de la tendance Cardmarket disponible.</p>
+    ${select("Langue de la carte", "language", active.language, [
+      ["fr", "Français"],
+      ["en", "Anglais"],
+    ])}
+    <label class="check-row"><input id="quick-ai" type="checkbox"> Ajouter l’analyse IA de l’état : envoyer recto et verso à OpenAI via mon serveur configuré (appel facturé).</label>
+    <div class="actions">${btn(icon("scan") + (detected ? "Relancer la préparation" : "Préparer ma carte"), "quick-prepare", "primary", !hasPhotos ? "disabled" : "")}${btn("Saisie manuelle / options avancées", "advanced-mode", "text-button")}</div>
+    <div id="job-status" role="status">${esc(quickMessage)}</div></section>
+    ${
+      detected
+        ? `<section class="panel"><div class="eyebrow">VÉRIFICATION FINALE</div><h2>Vérifiez, ajustez, puis validez.</h2>
+    ${candidates.length ? `<p class="notice amber">Plusieurs références possibles : choisissez votre édition.</p><div class="candidates">${candidates.map((c) => `<button class="candidate" data-action="candidate" data-id="${esc(c.id)}"><strong>${esc(c.name)}</strong><small>${esc(c.localId)} · ${esc(c.id)}</small><span>Choisir cette référence</span></button>`).join("")}</div>` : ""}
+    <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}${input("Extension", "set", active.set)}${active.variantOptions?.length ? select("Variante à vérifier", "variant", active.variant, [["", "Choisir"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition", "variant", active.variant)}</div>
+    <div class="form-grid">${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}${input("État sur Vinted", "vintedCondition", active.vintedCondition)}</div>
+    ${active.aiAnalysis ? `<p class="notice">Proposition IA : ${esc(active.aiAnalysis.condition)} · ${esc(active.aiAnalysis.confidence)}. ${active.aiAnalysis.defects.map(esc).join(" ; ")}${active.aiAnalysis.warnings.map((w) => `<br>${esc(w)}`).join("")}</p>` : '<p class="muted">Sans IA configurée, l’état reste à choisir après examen des deux faces.</p>'}
+    <label class="field">Défauts constatés<textarea data-field="defectNotes" rows="2">${esc(active.defectNotes)}</textarea></label>
+    ${active.defects.length ? `<p class="notice">Défauts déjà enregistrés : ${active.defects.map(esc).join(", ")}. Modifiez-les dans les options avancées.</p>` : ""}
+    <div class="quick-price"><h3>Votre prix</h3>${e.available ? `<p>Prix proposé selon vos comparables : ${money(e.price)}</p>${btn("Utiliser le prix conseillé", "apply-price", "secondary")}` : active.market?.trend ? `<p>Tendance Cardmarket : <strong>${money(active.market.trend)}</strong> · ${esc(active.market.updated || "date inconnue")}</p><p class="muted">Agrégat catalogue, sans filtrage par état, langue ou variante exacte. Ajustez le prix à votre exemplaire.</p>${btn("Utiliser cette tendance comme point de départ", "use-trend", "secondary")}` : '<p class="notice">Aucune donnée de prix exploitable disponible. Indiquez votre prix ou consultez les comparables dans les options avancées.</p>'}
+    ${input("Prix de vente (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}
+    <a class="inline-link" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent([active.name, active.number, active.set].join(" "))}" target="_blank" rel="noopener noreferrer">Comparer les annonces Vinted ↗</a></div>
+    ${input("Emballage réellement utilisé", "packaging", active.packaging, "text", 'placeholder="Ex. sleeve et protection rigide"')}
+    <p class="muted">L’emballage et le libellé Vinted seront mémorisés pour vos prochaines cartes dans ce navigateur. Vérifiez qu’ils conviennent à cet exemplaire.</p>
+    ${btn(active.title ? "Valider et actualiser mon annonce" : "Valider ma carte et créer l’annonce", "quick-validate", "primary", !hasPhotos ? "disabled" : "")}
+    <p class="muted">En validant, vous confirmez l’identité, l’édition, l’état et les défauts après avoir vérifié les deux faces.</p></section>`
+        : ""
+    }
+    ${active.title ? listingView(true) : ""}
+    </section></div>`);
+}
+async function prepareQuickCard(useAI) {
+  quickMessage = "Préparation en cours…";
+  active.identityConfirmed = false;
+  active.conditionConfirmed = false;
+  invalidateListing();
+  active.catalogId = "";
+  active.market = null;
+  active.variantOptions = [];
+  active.aiAnalysis = null;
+  let result;
+  let aiVariant = "";
+  let detectedNumber = "";
+  if (useAI) {
+    try {
+      const ai = await analyzePhotos(active);
+      active.aiAnalysis = ai;
+      active.name = ai.name || active.name;
+      active.number = ai.number || active.number;
+      active.set = ai.set || active.set;
+      active.variant = ai.variant || "";
+      if (["fr", "en"].includes(ai.language)) active.language = ai.language;
+      aiVariant = ai.variant || "";
+      detectedNumber = ai.number || "";
+      if (ai.photosSufficient && ai.condition !== "unknown") {
+        active.condition = ai.condition;
+        active.defectNotes = ai.defects.join("; ");
+      }
+      candidates = await searchCards(
+        active.name,
+        active.number,
+        active.language,
+      );
+    } catch (error) {
+      quickMessage = `IA indisponible : ${error.message} La lecture locale prend le relais.`;
+      toast(quickMessage, true);
+    }
+  }
+  if (!candidates.length) {
+    result = await recognizePhoto(
+      active.photos.find((p) => p.side === "front").data,
+      active.language,
+      (progress) => {
+        const status = document.querySelector("#job-status");
+        if (status) status.textContent = `Lecture du texte : ${progress} %`;
+      },
+    );
+    active.ocrText = result.text;
+    detectedNumber = result.number;
+    if (result.number) active.number = result.number;
+    candidates = result.matches;
+  }
+  // Only preselect an unambiguous candidate with a detected full number.
+  const total = detectedNumber.split("/")[1];
+  if (total && candidates.length && candidates.length < 24) {
+    const responses = await Promise.allSettled(
+      candidates.map((c) => getCard(c.id, active.language)),
+    );
+    const complete = responses.every((r) => r.status === "fulfilled");
+    const details = responses
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value);
+    const matching = details.filter(
+      (c) => String(c.set.cardCount.official) === String(Number(total)),
+    );
+    if (complete && matching.length === 1) {
+      await applyCatalog(matching[0].id);
+      if (active.variantOptions.length === 1)
+        active.variant = active.variantOptions[0];
+      if (aiVariant) active.variant = aiVariant;
+    } else if (complete && matching.length) candidates = matching;
+  }
+  quickMessage = [
+    quickMessage.startsWith("IA indisponible") ? quickMessage : "",
+    result?.warning ||
+      (active.catalogId
+        ? "Référence proposée. Vérifiez la variante, l’état et le prix ci-dessous."
+        : "Vérifiez les correspondances ou corrigez les informations dans les options avancées."),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  await persist();
+  render();
+  toast("Préparation terminée. Vérifiez votre carte.");
+}
 function photosView() {
-  return `<div class="panel"><div class="eyebrow">ÉTAPE 01</div><h2>Montrez votre carte sous tous les angles.</h2><p>Posez-la sur un fond uni, en lumière naturelle. Gardez les bords et les défauts visibles.</p><div class="photo-grid">${[
+  return `<div class="panel"><div class="eyebrow">${quickMode ? "VOS PHOTOS" : "ÉTAPE 01"}</div><h2>Montrez votre carte sous tous les angles.</h2><p>Posez-la sur un fond uni, en lumière naturelle. Gardez les bords et les défauts visibles.</p><div class="photo-grid">${[
     "front",
     "back",
   ]
@@ -198,7 +324,8 @@ function priceView(e) {
     ],
   )}${input("Prix de mise en vente choisi (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}</div>${e.available ? btn(`Utiliser le prix conseillé : ${money(e.price)}`, "apply-price", "secondary") : ""}<p class="muted">Vous pouvez saisir votre propre prix. Les indicateurs ne garantissent pas une vente.</p></div>`;
 }
-function listingView() {
+function listingView(compact = false) {
+  compact = compact === true;
   const errors = readyErrors(active);
   const stale =
     active.title && active.listingFingerprint !== listingFingerprint(active);
@@ -207,7 +334,7 @@ function listingView() {
       "La carte a été modifiée : régénérez et relisez le texte de l’annonce.",
     );
   const generationErrors = readyErrors(active);
-  return `<div class="panel"><div class="eyebrow">ÉTAPE 05</div><h2>Votre annonce, prête à être relue.</h2><p>Préparez les informations, puis transférez-les sur Vinted. La publication automatique nécessite encore un accès autorisé.</p><div class="form-grid">${input("État à sélectionner sur Vinted", "vintedCondition", active.vintedCondition, "text", 'placeholder="Libellé disponible pour votre catégorie"')}${input("Protection et expédition réelles", "packaging", active.packaging, "text", 'placeholder="Ex. sleeve, protection rigide, enveloppe…"')}</div><p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div><div class="transfer"><h3>Passer à la mise en vente</h3><p>1. Téléchargez le dossier contenant vos photos et l’annonce.<br>2. Ouvrez Vinted et transférez les informations.<br>3. Après publication, enregistrez le lien ci-dessous.</p><div class="actions">${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "primary", errors.length ? "disabled" : "")}<a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a></div></div>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
+  return `<div class="panel"><div class="eyebrow">${compact ? "VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2>Votre annonce, prête à être relue.</h2><p>Préparez les informations, puis transférez-les sur Vinted. La publication automatique nécessite encore un accès autorisé.</p>${compact ? "" : `<div class="form-grid">${input("État à sélectionner sur Vinted", "vintedCondition", active.vintedCondition, "text", 'placeholder="Libellé disponible pour votre catégorie"')}${input("Protection et expédition réelles", "packaging", active.packaging, "text", 'placeholder="Ex. sleeve, protection rigide, enveloppe…"')}</div>`}<p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div><div class="transfer"><h3>Passer à la mise en vente</h3><p>1. Téléchargez le dossier contenant vos photos et l’annonce.<br>2. Ouvrez Vinted et transférez les informations.<br>3. Après publication, enregistrez le lien ci-dessous.</p><div class="actions">${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "primary", errors.length ? "disabled" : "")}<a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a></div></div>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
     active.history
       .slice()
       .reverse()
@@ -267,6 +394,8 @@ async function applyCatalog(id) {
     active.variantOptions = Object.entries(result.variants || {})
       .filter(([, yes]) => yes)
       .map(([v]) => v);
+  if (quickMode && active.variantOptions.length === 1)
+    active.variant = active.variantOptions[0];
   setMarket(result);
   active.identityConfirmed = false;
   invalidateListing();
@@ -303,6 +432,17 @@ app.addEventListener("click", async (event) => {
     }
     if (action === "new") {
       active = newCard();
+      try {
+        const defaults = JSON.parse(
+          localStorage.getItem("listing-defaults") || "{}",
+        );
+        active.packaging = defaults.packaging || "";
+        active.vintedCondition = defaults.vintedCondition || "";
+      } catch {
+        /* Ignore invalid saved preferences. */
+      }
+      quickMode = true;
+      quickMessage = "";
       cards.unshift(active);
       await persist();
       view = "editor";
@@ -313,6 +453,8 @@ app.addEventListener("click", async (event) => {
     }
     if (action === "edit") {
       active = cards.find((c) => c.id === target.dataset.id);
+      quickMode = true;
+      quickMessage = "";
       view = "editor";
       step = 0;
       candidates = [];
@@ -326,6 +468,65 @@ app.addEventListener("click", async (event) => {
           : step + (action === "next" ? 1 : -1);
       render();
       window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (action === "advanced-mode" || action === "quick-mode") {
+      quickMode = action === "quick-mode";
+      step = 0;
+      render();
+      return;
+    }
+    if (action === "quick-prepare") {
+      const useAI = document.querySelector("#quick-ai").checked;
+      candidates = [];
+      await runJob("Préparation de votre carte…", () =>
+        prepareQuickCard(useAI),
+      );
+      return;
+    }
+    if (action === "use-trend") {
+      if (active.market?.trend > 0) {
+        active.price = active.market.trend;
+        invalidateListing();
+        log("Tendance générale choisie comme point de départ par le vendeur");
+        await persist();
+        render();
+      }
+      return;
+    }
+    if (action === "quick-validate") {
+      const proposed = {
+        ...active,
+        identityConfirmed: true,
+        conditionConfirmed: true,
+      };
+      const errors = readyErrors(proposed);
+      if (errors.length) throw new Error(errors.join(" "));
+      if (
+        active.title &&
+        !confirm(
+          "Actualiser le texte de l’annonce et remplacer vos corrections ?",
+        )
+      )
+        return;
+      active.identityConfirmed = true;
+      active.conditionConfirmed = true;
+      Object.assign(active, generateListing(active));
+      active.listingFingerprint = listingFingerprint(active);
+      active.status = "Prête";
+      localStorage.setItem(
+        "listing-defaults",
+        JSON.stringify({
+          packaging: active.packaging,
+          vintedCondition: active.vintedCondition,
+        }),
+      );
+      log("Carte vérifiée et annonce générée en mode rapide");
+      await persist();
+      render();
+      document
+        .querySelector(".listing-fields")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     if (action === "save-vision-access") {
@@ -387,6 +588,7 @@ app.addEventListener("click", async (event) => {
     }
     if (action === "remove-photo") {
       active.photos = active.photos.filter((p) => p.id !== target.dataset.id);
+      active.aiAnalysis = null;
       active.conditionConfirmed = false;
       active.identityConfirmed = false;
       invalidateListing();
@@ -603,6 +805,7 @@ app.addEventListener("change", (event) =>
         if (side !== "detail")
           active.photos = active.photos.filter((p) => p.side !== side);
         active.photos.push(photo);
+        active.aiAnalysis = null;
         active.conditionConfirmed = false;
         active.identityConfirmed = false;
         invalidateListing();
@@ -685,6 +888,9 @@ app.addEventListener("change", (event) =>
       await persist();
       if (
         [
+          ...(quickMode
+            ? ["price", "variant", "name", "number", "set", "defectNotes"]
+            : []),
           "strategy",
           "condition",
           "identityConfirmed",

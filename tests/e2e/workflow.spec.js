@@ -33,6 +33,9 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
   ).toBeVisible();
   await page.locator('input[data-side="back"]').setInputFiles(file);
   await expect(page.getByAltText("Verso de la carte")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Saisie manuelle / options avancées" })
+    .click();
   await page.getByRole("button", { name: "2 Identification" }).click();
   for (const [field, value] of [
     ["name", "Dracaufeu"],
@@ -116,6 +119,9 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
     .click();
   await expect(page.locator(".collection-card")).toHaveCount(1);
   await page.locator(".collection-card").click();
+  await page
+    .getByRole("button", { name: "Saisie manuelle / options avancées" })
+    .click();
   await page.getByRole("button", { name: "5 Annonce" }).click();
   await expect(page.locator('[data-field="description"]')).toHaveValue(
     "Description personnalisée conservée.",
@@ -147,6 +153,9 @@ test("mobile, absence de débordement, blocage sans verso et absence de prix fic
   await page
     .getByRole("button", { name: "Ajouter une carte", exact: true })
     .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Saisie manuelle / options avancées" })
     .click();
   await page.getByRole("button", { name: "3 État" }).click();
   await expect(
@@ -187,6 +196,9 @@ test("catalogue : sélection explicite et données externes échappées", async 
   await page
     .getByRole("button", { name: "Ajouter une carte", exact: true })
     .first()
+    .click();
+  await page
+    .getByRole("button", { name: "Saisie manuelle / options avancées" })
     .click();
   await page.getByRole("button", { name: "2 Identification" }).click();
   await page.locator('[data-field="name"]').fill("Dracaufeu");
@@ -232,14 +244,15 @@ test("OCR réel avec moteur local : nom et numéro lus sur une image synthétiqu
     x.fillText("4/102", 70, 1000);
     return c.toDataURL("image/png").split(",")[1];
   });
-  await page
-    .locator('input[data-side="front"]')
-    .setInputFiles({
-      name: "ocr-test.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(image, "base64"),
-    });
+  await page.locator('input[data-side="front"]').setInputFiles({
+    name: "ocr-test.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(image, "base64"),
+  });
   await expect(page.locator(".photo-slot img")).toHaveCount(1);
+  await page
+    .getByRole("button", { name: "Saisie manuelle / options avancées" })
+    .click();
   await page.getByRole("button", { name: "2 Identification" }).click();
   await page.getByRole("button", { name: "Lire la photo avec l’OCR" }).click();
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102", {

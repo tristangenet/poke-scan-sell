@@ -1,4 +1,4 @@
-# Validation — version 0.1.0
+# Validation — version 0.2.0
 
 Vérifications effectuées le 1 octobre 2026.
 
@@ -6,12 +6,16 @@ Vérifications effectuées le 1 octobre 2026.
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
 | Tests unitaires et serveur Node            | 13 réussis                                                 |
-| Parcours navigateur Chromium               | 4 réussis                                                  |
+| Parcours navigateur Chromium               | 7 réussis                                                  |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
 | Appel IA OpenAI avec une clé réelle        | Non exécuté ; connecteur validé avec réponses simulées     |
 | Publication réelle sur Vinted              | Non exécutée ; mode manuel assisté uniquement              |
+
+## Mode rapide
+
+OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état et emballage, validation unique et génération, blocage du ZIP après changement de prix, réutilisation des préférences d’emballage. Deux éditions avec le même numéro complet restent à choisir. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
 
 ## Parcours navigateur
 
