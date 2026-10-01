@@ -17,8 +17,12 @@ import {
   listingFingerprint,
 } from "./domain.js";
 import { listCards, saveCard, deleteCard, importCards } from "./storage.js";
-import { searchCards, getCard, recognizePhoto } from "./catalog.js";
-import { resolveReference } from "./recognition.js";
+import {
+  searchCards,
+  getCard,
+  recognizePhoto,
+  resolveCatalogue,
+} from "./catalog.js";
 import { readPhoto, download } from "./photos.js";
 const app = document.querySelector("#app");
 let cards = [],
@@ -238,19 +242,17 @@ async function prepareQuickCard(useAI) {
       },
     );
     active.ocrText = result.text;
+    if (result.name) active.name = result.name;
     detectedNumber = result.number;
     if (result.number) active.number = result.number;
     candidates = result.matches;
   }
-  const resolution = await identifyFromEvidence(
-    {
-      number: detectedNumber,
-      name: !result ? active.aiAnalysis?.name : "",
-      set: active.aiAnalysis?.set || "",
-      text: result?.text || "",
-    },
-    !result?.truncated,
-  );
+  const resolution = await identifyFromEvidence({
+    number: detectedNumber,
+    name: !result ? active.aiAnalysis?.name : "",
+    set: active.aiAnalysis?.set || "",
+    text: result?.text || "",
+  });
   if (active.catalogId && aiVariant) active.variant = aiVariant;
   quickMessage = [
     quickMessage.startsWith("IA indisponible") ? quickMessage : "",
@@ -393,19 +395,16 @@ async function applyCatalog(id, loaded = null) {
   render();
   toast("Référence sélectionnée. Confirmez la variante de votre exemplaire.");
 }
-async function identifyFromEvidence(evidence, complete = true) {
-  if (!candidates.length) return resolveReference([], evidence, complete);
-  const responses = await Promise.allSettled(
-    candidates.map((c) => getCard(c.id, active.language)),
+async function identifyFromEvidence(evidence) {
+  const resolution = await resolveCatalogue(
+    candidates,
+    evidence,
+    active.language,
+    (message) => {
+      const status = document.querySelector("#job-status");
+      if (status) status.textContent = message;
+    },
   );
-  const allLoaded =
-    complete &&
-    candidates.length < 24 &&
-    responses.every((r) => r.status === "fulfilled");
-  const details = responses
-    .filter((r) => r.status === "fulfilled")
-    .map((r) => r.value);
-  const resolution = resolveReference(details, evidence, allLoaded);
   if (resolution.card) await applyCatalog(resolution.card.id, resolution.card);
   return resolution;
 }
@@ -636,14 +635,15 @@ app.addEventListener("click", async (event) => {
             },
           );
           active.ocrText = result.text;
+          if (result.name) active.name = result.name;
           if (result.number) active.number = result.number;
           candidates = result.matches;
           active.identityConfirmed = false;
           clearIdentity();
-          const resolution = await identifyFromEvidence(
-            { number: result.number, text: result.text },
-            !result.truncated,
-          );
+          const resolution = await identifyFromEvidence({
+            number: result.number,
+            text: result.text,
+          });
           quickMessage = resolution.reason;
           await persist();
           render();
@@ -654,7 +654,9 @@ app.addEventListener("click", async (event) => {
     }
     if (action === "refresh-market") {
       await runJob("Actualisation de la source…", async () => {
-        setMarket(await getCard(active.catalogId, active.language));
+        setMarket(
+          await getCard(active.catalogId, active.language, { refresh: true }),
+        );
         await persist();
         render();
         toast("Données catalogue actualisées.");

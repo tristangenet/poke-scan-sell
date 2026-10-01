@@ -1,12 +1,12 @@
-# Validation — version 0.2.1
+# Validation — version 0.2.2
 
 Vérifications effectuées le 1 octobre 2026.
 
 | Vérification                               | Résultat                                                   |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
-| Tests unitaires et serveur Node            | 17 réussis                                                 |
-| Parcours navigateur Chromium               | 7 réussis                                                  |
+| Tests unitaires et serveur Node            | 22 réussis                                                 |
+| Parcours navigateur Chromium               | 9 réussis                                                  |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
@@ -16,6 +16,12 @@ Vérifications effectuées le 1 octobre 2026.
 ## Mode rapide
 
 OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état et emballage, validation unique et génération, blocage du ZIP après changement de prix, réutilisation des préférences d’emballage. Deux éditions avec le même numéro complet provoquent une demande de nouvelle photo, sans liste de choix dans le mode rapide. Tests du résolveur : extension lisible départageant les éditions, suffixes ex, noms courts, numéros isolés et promos, refus des contradictions et des catalogues incomplets. Le bouton OCR du mode avancé applique aussi la référence automatiquement. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
+
+## Régression catalogue
+
+Cas navigateur : 30 références candidates, identification de la 29e grâce au total de l’extension sans charger les autres fiches ; récupération après une erreur HTTP 503 ; identité conservée avec un détail HTTP 404 et prix/variante vides. Tests client : reprises sur 503/429, absence de cache des échecs, déduplication des requêtes en cours, copie indépendante des résultats, limite de trois requêtes simultanées et actualisation explicite contournant le cache.
+
+Requêtes HTTP réelles le 1 octobre : catalogue français de 22 170 cartes, 202 extensions et fiches de cartes examinées avec succès. Le rapprochement des métadonnées réelles identifie base1-4 à partir de Dracaufeu 4/102. La photo du test utilisateur signalant l’erreur n’a pas été fournie : ce cas précis n’a pas été reproduit sur son image.
 
 ## Parcours navigateur
 

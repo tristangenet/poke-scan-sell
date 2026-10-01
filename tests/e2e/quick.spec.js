@@ -152,7 +152,7 @@ test("une édition ambiguë n’est pas sélectionnée automatiquement", async (
     timeout: 45000,
   });
   await expect(page.locator(".candidate")).toHaveCount(0);
-  await expect(page.locator('[data-field="name"]')).toHaveValue("");
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
 });
 
@@ -191,4 +191,94 @@ test("mode IA configuré : identité et état proposés en une préparation", as
     "Point blanc au dos",
   );
   await expect(page.locator('[data-field="title"]')).toHaveCount(0);
+});
+
+test("plus de 24 références : l’extension cible la bonne carte sans charger les autres fiches", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const requests = [];
+  const briefs = Array.from({ length: 30 }, (_, i) => ({
+    id: `series${i}-4`,
+    name: "Dracaufeu",
+    localId: "4",
+  }));
+  const sets = Array.from({ length: 30 }, (_, i) => ({
+    id: `series${i}`,
+    name: `Extension ${i}`,
+    cardCount: { official: i === 28 ? 102 : 200 + i },
+  }));
+  let selectedCalls = 0;
+  await page.route("https://api.tcgdex.net/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    requests.push(path);
+    if (path.endsWith("/sets")) return route.fulfill({ json: sets });
+    if (path.endsWith("/cards")) return route.fulfill({ json: briefs });
+    if (path.endsWith("/cards/series28-4")) {
+      selectedCalls++;
+      if (selectedCalls === 1)
+        return route.fulfill({ status: 503, json: { error: "Temporaire" } });
+      return route.fulfill({
+        json: { ...briefs[28], set: sets[28], variants: { holo: true } },
+      });
+    }
+    return route.fulfill({
+      status: 500,
+      json: { error: "Fiche hors de la bonne extension" },
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page);
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator('[data-field="set"]')).toHaveValue("Extension 28", {
+    timeout: 45000,
+  });
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
+  expect(selectedCalls).toBe(2);
+  expect(requests.filter((path) => path.includes("/cards/"))).toEqual([
+    "/v2/fr/cards/series28-4",
+    "/v2/fr/cards/series28-4",
+  ]);
+});
+
+test("fiche détaillée indisponible : identité conservée, prix et variante laissés vides", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const set = {
+    id: "base1",
+    name: "Set de Base",
+    cardCount: { official: 102 },
+  };
+  await page.route("https://api.tcgdex.net/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/sets")) return route.fulfill({ json: [set] });
+    if (path.endsWith("/cards"))
+      return route.fulfill({
+        json: [{ id: "base1-4", name: "Dracaufeu", localId: "4" }],
+      });
+    return route.fulfill({ status: 404, json: { error: "Fiche absente" } });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page);
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator('[data-field="set"]')).toHaveValue("Set de Base", {
+    timeout: 45000,
+  });
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
+  await expect(page.locator('[data-field="price"]')).toHaveValue("");
+  await expect(page.locator('[data-field="variant"]')).toHaveValue("");
+  await expect(page.locator("#job-status")).toContainText(
+    "variantes et le prix",
+  );
 });
