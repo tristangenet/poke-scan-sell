@@ -1,17 +1,20 @@
-# Architecture — version 0.1.0
+# Architecture — version 0.2.4
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
-| Module           | Responsabilité                                                        |
-| ---------------- | --------------------------------------------------------------------- |
-| src/main.js      | Navigation, formulaires, brouillons et commandes utilisateur          |
-| src/domain.js    | États, règles de préparation, estimation, empreinte d'annonce         |
-| src/storage.js   | Transactions IndexedDB                                                |
-| src/catalog.js   | TCGdex et OCR Tesseract.js                                            |
-| src/photos.js    | Import d'originaux, contrôles d'éclairage/résolution, téléchargements |
-| src/vision.js    | Appel du serveur IA, sans clé fournisseur                             |
-| server/index.js  | Fichiers construits, contrôle d'accès/origine, limites, API           |
-| server/vision.js | Validation photos et appel Responses structuré                        |
+| Module                | Responsabilité                                                        |
+| --------------------- | --------------------------------------------------------------------- |
+| src/main.js           | Navigation, formulaires, brouillons et commandes utilisateur          |
+| src/domain.js         | États, règles de préparation, estimation, empreinte d'annonce         |
+| src/storage.js        | Transactions IndexedDB                                                |
+| src/catalog.js        | TCGdex et orchestration de la lecture OCR                             |
+| src/catalog-client.js | Reprises, cache et limite de concurrence des requêtes catalogue       |
+| src/ocr.js            | Copies de lecture, zones agrandies et reprises OCR bornées            |
+| src/recognition.js    | Extraction de nom/numéro et résolution catalogue                      |
+| src/photos.js         | Import d'originaux, contrôles d'éclairage/résolution, téléchargements |
+| src/vision.js         | Appel du serveur IA, sans clé fournisseur                             |
+| server/index.js       | Fichiers construits, contrôle d'accès/origine, limites, API           |
+| server/vision.js      | Validation photos et appel Responses structuré                        |
 
 ## Modèle local
 
@@ -25,7 +28,7 @@ Une empreinte des faits de la carte évite le téléchargement et la confirmatio
 
 TCGdex : https://tcgdex.dev/rest/cards et https://tcgdex.dev/rest/card. Les tendances proviennent du champ pricing.cardmarket ; leur présence ne garantit pas le prix d'une langue/variante/condition précise. L'API propose des données publiques ; leur disponibilité et conditions doivent être suivies.
 
-OCR : https://github.com/naptha/tesseract.js. Traitement dans le navigateur, avec moteur et modèles français/anglais servis par l’application après npm ci. Il s'agit de lecture de texte, sans évaluation d'état ou certification. Les candidats doivent être confirmés.
+OCR : https://github.com/naptha/tesseract.js. Traitement dans le navigateur, avec moteur et modèles français/anglais servis par l’application après npm ci. Il s'agit de lecture de texte, sans évaluation d'état ou certification. Le scan remplit automatiquement le nom et le numéro quand ils concordent. Les copies agrandies et contrastées servent uniquement à la lecture ; les originaux restent intacts. Le nom et le numéro sont conservés indépendamment du rapprochement catalogue, et les références de sous-séries gardent leur total imprimé. Les étapes OCR émettent des diagnostics locaux de progression et de réussite des champs, sans journaliser les photos. La référence catalogue exacte est nécessaire pour attribuer sa tendance de prix, tandis que l’extension et la variante sont facultatives pour générer une annonce. Les informations sont vérifiées par le vendeur à la validation.
 
 IA optionnelle : https://developers.openai.com/api/docs/guides/images-vision et https://developers.openai.com/api/docs/guides/structured-outputs. Recto/verso envoyés seulement après accord utilisateur. La réponse contient identité lisible, état suggéré, défauts, confiance et besoin de meilleures photos. Aucune publication déclenchée par la réponse.
 

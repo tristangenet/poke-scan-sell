@@ -1,5 +1,5 @@
 import { normalizeNumber } from "./domain.js";
-import { namesInText, detectedNumber } from "./recognition.js";
+import { createOCRViews, readCardPhoto } from "./ocr.js";
 import { resolveReference } from "./recognition.js";
 import {
   createCatalogueClient,
@@ -115,7 +115,7 @@ export async function resolveCatalogue(
   );
   if (!complete)
     return {
-      card: null,
+      ...resolveReference(unique, evidence, false),
       reason: `${metadata.size}/${unique.length} références vérifiées. ${serviceError || "Certaines fiches restent indisponibles."} Le nom et le numéro lus sont conservés.`,
     };
   if (!resolution.card) return resolution;
@@ -133,7 +133,12 @@ export async function resolveCatalogue(
   }
 }
 
-export async function recognizePhoto(data, language, onProgress) {
+export async function recognizePhoto(
+  data,
+  language,
+  onProgress,
+  onStage = () => {},
+) {
   const { createWorker } = await import("tesseract.js");
   const worker = await createWorker(language === "fr" ? "fra" : "eng", 1, {
     workerPath: new URL("/ocr/worker.min.js", location.origin).href,
@@ -146,8 +151,6 @@ export async function recognizePhoto(data, language, onProgress) {
     },
   });
   try {
-    const result = await worker.recognize(data);
-    const number = detectedNumber(result.data.text);
     let cards = [];
     let warning = "";
     try {
@@ -158,22 +161,31 @@ export async function recognizePhoto(data, language, onProgress) {
       warning =
         "Texte lu, mais catalogue indisponible. Réessayez la recherche plus tard.";
     }
-    const matches = namesInText(
-      cards.filter(validBrief),
-      result.data.text,
-    ).filter(
-      (c) =>
-        !/^A[0-9]/.test(c.id) &&
-        (!number || normalizeNumber(c.localId) === normalizeNumber(number)),
+    // Set counts allow a missing OCR slash (e.g. 4102) to be restored safely.
+    try {
+      const sets = await get(`/${language}/sets`);
+      const byId = new Map(
+        (Array.isArray(sets) ? sets : []).map((s) => [s.id, s]),
+      );
+      cards = cards.filter(validBrief).map((c) => {
+        const suffix = `-${c.localId}`;
+        const setId = c.id.endsWith(suffix)
+          ? c.id.slice(0, -suffix.length)
+          : c.id.slice(0, c.id.lastIndexOf("-"));
+        return { ...c, set: c.set || byId.get(setId) };
+      });
+    } catch {
+      // Ordinary readable references do not require this optional correction.
+    }
+    const views = await createOCRViews(data);
+    const reading = await readCardPhoto(
+      worker,
+      views,
+      cards.filter(validBrief).filter((c) => !/^A[0-9]/.test(c.id)),
+      onStage,
     );
     return {
-      text: result.data.text,
-      number,
-      matches,
-      name:
-        [...new Set(matches.map((c) => c.name))].length === 1
-          ? matches[0].name
-          : "",
+      ...reading,
       warning,
     };
   } finally {

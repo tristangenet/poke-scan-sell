@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 
-async function addPhotos(page) {
-  const image = await page.evaluate(() => {
+async function addPhotos(
+  page,
+  fields = { name: "Dracaufeu", number: "4/102" },
+) {
+  const image = await page.evaluate(({ name, number }) => {
     const c = document.createElement("canvas");
     c.width = 800;
     c.height = 1100;
@@ -10,11 +13,11 @@ async function addPhotos(page) {
     x.fillRect(0, 0, 800, 1100);
     x.fillStyle = "black";
     x.font = "bold 60px Arial";
-    x.fillText("Dracaufeu", 70, 100);
+    x.fillText(name, 70, 100);
     x.font = "40px Arial";
-    x.fillText("4/102", 70, 1000);
+    x.fillText(number, 70, 1000);
     return c.toDataURL("image/png").split(",")[1];
-  });
+  }, fields);
   for (const side of ["front", "back"]) {
     await page.locator(`input[data-side="${side}"]`).setInputFiles({
       name: "carte.png",
@@ -320,4 +323,136 @@ test("fiche détaillée indisponible : identité conservée, prix et variante la
   await expect(page.locator("#job-status")).toContainText(
     "variantes et le prix",
   );
+});
+
+test("lecture partielle : le nom reste rempli après les tentatives automatiques et le champ manquant est indiqué", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await catalogue(page);
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page, { name: "Dracaufeu", number: "" });
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator("#job-status")).toContainText(
+    "numéro reste illisible",
+    { timeout: 45000 },
+  );
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="number"]')).toHaveValue("");
+  await page.getByText("Texte lu dans la photo", { exact: true }).click();
+  await expect(page.locator("pre")).toContainText("Lecture agrandie du numéro");
+  await expect(page.locator('[data-field="price"]')).toHaveValue("");
+});
+
+test("numéro non retrouvé : le nom et le numéro lus sont conservés sans prix d’une autre carte", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await catalogue(page);
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page, { name: "Dracaufeu", number: "5/102" });
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator("#job-status")).toContainText(
+    "Référence exacte non retrouvée",
+    { timeout: 45000 },
+  );
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="number"]')).toHaveValue("5/102");
+  await expect(page.locator('[data-field="set"]')).toHaveValue("");
+  await expect(page.locator('[data-field="price"]')).toHaveValue("");
+});
+
+test("sous-série TG : reconnaissance réelle et numéro imprimé conservé", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  const card = {
+    id: "subset-TG01",
+    name: "Mew",
+    localId: "TG01",
+    set: { id: "subset", name: "Test", cardCount: { official: 185 } },
+  };
+  await page.route("https://api.tcgdex.net/**", (route) =>
+    route.fulfill({
+      json: route.request().url().endsWith("/sets")
+        ? [card.set]
+        : route.request().url().endsWith("/cards")
+          ? [card]
+          : card,
+    }),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page, { name: "Mew", number: "TG01/TG30" });
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Mew", {
+    timeout: 45000,
+  });
+  await expect(page.locator('[data-field="number"]')).toHaveValue("TG01/TG30");
+  await expect(page.locator('[data-field="set"]')).toHaveValue("Test");
+});
+
+test("une analyse IA lisant le nom et le numéro reste exploitable sans fiche catalogue", async ({
+  page,
+}) => {
+  await page.route("https://api.tcgdex.net/**", (route) =>
+    route.fulfill({ json: [] }),
+  );
+  await page.route("**/api/vision", (route) =>
+    route.fulfill({
+      json: {
+        name: "Dracaufeu",
+        number: "4/102",
+        set: "",
+        variant: "",
+        condition: "EX",
+        confidence: "medium",
+        defects: [],
+        warnings: [],
+        photosSufficient: true,
+      },
+    }),
+  );
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page);
+  await page.locator("#quick-ai").check();
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator("#job-status")).toContainText("Nom et numéro lus");
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
+  await expect(page.locator('[data-field="condition"]')).toHaveValue("EX");
+});
+
+test("séparateur non lu : le numéro est restauré par le nom et le total catalogue concordants", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await catalogue(page);
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .first()
+    .click();
+  await addPhotos(page, { name: "Dracaufeu", number: "4102" });
+  await page.getByRole("button", { name: "Préparer ma carte" }).click();
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu", {
+    timeout: 45000,
+  });
+  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
+  await expect(page.locator('[data-field="set"]')).toHaveValue("Set de Base");
 });

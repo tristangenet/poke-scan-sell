@@ -1,12 +1,12 @@
-# Validation — version 0.2.3
+# Validation — version 0.2.4
 
 Vérifications effectuées le 1 octobre 2026.
 
 | Vérification                               | Résultat                                                   |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
-| Tests unitaires et serveur Node            | 24 réussis                                                 |
-| Parcours navigateur Chromium               | 9 réussis                                                  |
+| Tests unitaires et serveur Node            | 33 réussis                                                 |
+| Parcours navigateur Chromium               | 14 réussis                                                 |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
@@ -16,6 +16,12 @@ Vérifications effectuées le 1 octobre 2026.
 ## Mode rapide
 
 OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état et emballage, validation unique et génération, blocage du ZIP après changement de prix, réutilisation des préférences d’emballage. Deux éditions avec le même numéro complet conservent le nom et le numéro, sans liste de choix ni demande de reprendre la photo pour l’édition. Le parcours crée une annonce et active le ZIP avec extension et variante vides ; le titre et la description omettent ces champs. Aucune tendance de prix d’une édition arbitraire n’est proposée. Tests du résolveur : extension lisible départageant les éditions, suffixes ex, noms courts, numéros isolés et promos, refus des contradictions de nom/numéro et des catalogues incomplets ; extension contradictoire ignorée pour l’identité de base, sans attribution de fiche catalogue. Le bouton OCR du mode avancé applique aussi la référence automatiquement. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
+
+## Régression de lecture
+
+Nouveaux tests navigateur avec le moteur OCR réel et des images synthétiques : nom conservé sans numéro après les nouvelles tentatives, nom conservé pour un numéro absent du catalogue, numéro TG01/TG30 conservé sans remplacement par le total de l’extension, référence 4/102 récupérée à partir de 4102 avec nom et total concordants. Analyse IA simulée : nom et numéro conservés sans résultat catalogue. Tests de logique : faute d’une lettre avec numéro concordant, refus d’un nom approximatif ambigu, confusion OCR O/0 dans le numéro, numéro du bas préféré à un ratio d’attaque, champ manquant explicite, priorité au titre principal plutôt qu’à la pré-évolution, récupération d’un séparateur manquant uniquement avec métadonnées concordantes et exclusion des années de copyright. Moteur simulé dans les tests unitaires de reprises : récupération par les zones agrandies et fin bornée des huit tentatives sur une image illisible. Aucune photo du dernier test utilisateur n’a été fournie ; la reconnaissance de cette photo précise reste à vérifier.
+
+Test complémentaire sur l’image réelle du catalogue Dracaufeu base1-4 (https://assets.tcgdex.net/fr/base/base1/4/high.webp), avec les 22 170 cartes et 202 extensions de l’API réelle chargées le 1 octobre : le défaut a été reproduit, puis la correction a rempli Dracaufeu, 4/102 et Set de Base sans erreur JavaScript. Il s’agit d’une image de catalogue nette, pas d’une photographie physique de l’exemplaire utilisateur.
 
 ## Régression catalogue
 

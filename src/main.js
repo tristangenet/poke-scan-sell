@@ -162,7 +162,11 @@ function renderQuickEditor() {
   );
   const e = estimate(active);
   const detected =
-    active.catalogId || active.ocrText || active.aiAnalysis || active.name;
+    active.catalogId ||
+    active.ocrText ||
+    active.aiAnalysis ||
+    active.scanDiagnostics ||
+    active.name;
   shell(`<div class="editor-heading"><div><div class="eyebrow">MODE RAPIDE</div><h1>Deux photos. Une annonce.</h1><p>Photographiez, laissez l’application préparer, puis vérifiez.</p></div><div class="saved">${badge(active.status)}</div></div>
     <div class="quick-layout"><section>
     ${!detected ? photosView() : `<details class="panel"><summary>Vos photos (${active.photos.length}) · modifier</summary>${photosView()}</details>`}
@@ -171,7 +175,7 @@ function renderQuickEditor() {
       ["fr", "Français"],
       ["en", "Anglais"],
     ])}
-    <label class="check-row"><input id="quick-ai" type="checkbox"> Ajouter l’analyse IA de l’état : envoyer recto et verso à OpenAI via mon serveur configuré (appel facturé).</label>
+    <label class="check-row"><input id="quick-ai" type="checkbox"> Ajouter l’analyse IA du nom, du numéro et de l’état : envoyer recto et verso à OpenAI via mon serveur configuré (appel facturé).</label>
     <div class="actions">${btn(icon("scan") + (detected ? "Relancer la préparation" : "Préparer ma carte"), "quick-prepare", "primary", !hasPhotos ? "disabled" : "")}${btn("Saisie manuelle / options avancées", "advanced-mode", "text-button")}</div>
     <div id="job-status" role="status">${esc(quickMessage)}</div></section>
     ${
@@ -179,6 +183,7 @@ function renderQuickEditor() {
         ? `<section class="panel"><div class="eyebrow">VÉRIFICATION FINALE</div><h2>Vérifiez, ajustez, puis validez.</h2>
     ${!active.catalogId ? `<p class="notice ${active.name && active.number ? "" : "amber"}">${esc(quickMessage || (active.name && active.number ? "Nom et numéro renseignés. L’édition est facultative." : "Reprenez une photo lisible du nom et du numéro."))}</p>` : `<p class="notice">Carte identifiée automatiquement · ${esc(active.catalogId)}</p>`}
     <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}</div>
+    ${active.ocrText ? `<details><summary>Texte lu dans la photo</summary><pre>${esc(active.ocrText)}</pre></details>` : ""}
     <details><summary>Extension et variante (facultatif)</summary><div class="form-grid">${input("Extension (facultatif)", "set", active.set)}${active.variantOptions?.length ? select("Variante (facultatif)", "variant", active.variant, [["", "Non précisée"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition (facultatif)", "variant", active.variant)}</div></details>
     <div class="form-grid">${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}${input("État sur Vinted", "vintedCondition", active.vintedCondition)}</div>
     ${active.aiAnalysis ? `<p class="notice">Proposition IA : ${esc(active.aiAnalysis.condition)} · ${esc(active.aiAnalysis.confidence)}. ${active.aiAnalysis.defects.map(esc).join(" ; ")}${active.aiAnalysis.warnings.map((w) => `<br>${esc(w)}`).join("")}</p>` : '<p class="muted">Sans IA configurée, l’état reste à choisir après examen des deux faces.</p>'}
@@ -208,6 +213,9 @@ async function prepareQuickCard(useAI) {
   active.set = "";
   active.variant = "";
   active.ocrText = "";
+  active.scanDiagnostics = null;
+  active.name = "";
+  active.number = "";
   candidates = [];
   let result;
   let aiVariant = "";
@@ -237,37 +245,53 @@ async function prepareQuickCard(useAI) {
       toast(quickMessage, true);
     }
   }
-  if (!candidates.length) {
+  if (
+    !candidates.length &&
+    !(active.aiAnalysis?.name && active.aiAnalysis?.number)
+  ) {
+    let scanStage = "Lecture du recto";
     result = await recognizePhoto(
       active.photos.find((p) => p.side === "front").data,
       active.language,
       (progress) => {
         const status = document.querySelector("#job-status");
-        if (status) status.textContent = `Lecture du texte : ${progress} %`;
+        if (status) status.textContent = `${scanStage} : ${progress} %`;
+      },
+      (stage) => {
+        scanStage = stage;
+        const status = document.querySelector("#job-status");
+        if (status) status.textContent = stage;
       },
     );
     active.ocrText = result.text;
-    if (result.name) active.name = result.name;
+    active.scanDiagnostics = result.diagnostics;
+    active.name = result.name || active.aiAnalysis?.name || "";
     detectedNumber = result.number;
-    if (result.number) active.number = result.number;
+    active.number = result.number || active.aiAnalysis?.number || "";
     candidates = result.matches;
   }
   const resolution = await identifyFromEvidence({
-    number: detectedNumber,
-    name: !result ? active.aiAnalysis?.name : "",
+    number: detectedNumber || active.number,
+    name: active.name,
     set: active.aiAnalysis?.set || "",
     text: result?.text || "",
   });
   if (active.catalogId && aiVariant) active.variant = aiVariant;
   quickMessage = [
     quickMessage.startsWith("IA indisponible") ? quickMessage : "",
-    result?.warning || resolution.reason,
+    resolution.reason,
+    result?.warning,
   ]
     .filter(Boolean)
     .join(" ");
   await persist();
   render();
-  toast("Préparation terminée. Vérifiez votre carte.");
+  toast(
+    active.name && active.number
+      ? "Carte préparée. Vérifiez les informations lues."
+      : quickMessage,
+    !active.name || !active.number,
+  );
 }
 function photosView() {
   return `<div class="panel"><div class="eyebrow">${quickMode ? "VOS PHOTOS" : "ÉTAPE 01"}</div><h2>Montrez votre carte sous tous les angles.</h2><p>Posez-la sur un fond uni, en lumière naturelle. Gardez les bords et les défauts visibles.</p><div class="photo-grid">${[
@@ -373,14 +397,15 @@ function invalidateListing() {
   if (!["Vendue", "Archivée"].includes(active.status))
     active.status = "À vérifier";
 }
-async function applyCatalog(id, loaded = null) {
+async function applyCatalog(id, loaded = null, readNumber = "") {
   const result = loaded || (await getCard(id, active.language));
   active.catalogId = result.id;
   active.name = result.name;
   active.number =
-    result.set.cardCount.official > 0
+    readNumber ||
+    (result.set.cardCount.official > 0
       ? `${result.localId}/${result.set.cardCount.official}`
-      : String(result.localId);
+      : String(result.localId));
   active.set = result.set.name;
   active.variant = "";
   active.variantOptions = (result.variants_detailed || []).map((v) =>
@@ -410,7 +435,8 @@ async function identifyFromEvidence(evidence) {
       if (status) status.textContent = message;
     },
   );
-  if (resolution.card) await applyCatalog(resolution.card.id, resolution.card);
+  if (resolution.card)
+    await applyCatalog(resolution.card.id, resolution.card, evidence.number);
   else if (resolution.identity) {
     active.name = resolution.identity.name;
     active.number = resolution.identity.number;
@@ -648,13 +674,17 @@ app.addEventListener("click", async (event) => {
             },
           );
           active.ocrText = result.text;
-          if (result.name) active.name = result.name;
-          if (result.number) active.number = result.number;
+          active.scanDiagnostics = result.diagnostics;
+          active.name = result.name;
+          active.number = result.number;
+          active.set = "";
+          active.variant = "";
           candidates = result.matches;
           active.identityConfirmed = false;
           clearIdentity();
           const resolution = await identifyFromEvidence({
             number: result.number,
+            name: result.name,
             text: result.text,
           });
           quickMessage = resolution.reason;

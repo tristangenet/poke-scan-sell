@@ -4,12 +4,84 @@ import {
   resolveReference,
   namesInText,
   detectedNumber,
+  photoReading,
+  incompleteReadingReason,
 } from "../src/recognition.js";
 const card = (id, name, number, set, total) => ({
   id,
   name,
   localId: number,
   set: { id, name: set, cardCount: { official: total } },
+});
+test("un numéro mal lu ne supprime pas le nom reconnu", () => {
+  const reading = photoReading([base], "Dracaufeu PV 120\n5/102");
+  assert.equal(reading.name, "Dracaufeu");
+  assert.equal(reading.number, "5/102");
+  assert.deepEqual(reading.matches, []);
+  assert.equal(
+    photoReading(
+      [base, card("base1-5", "Reptincel", "5", "Base", 102)],
+      "Dracaufeu\nÉvolue de Reptincel\n4/102",
+    ).name,
+    "Dracaufeu",
+  );
+});
+test("un séparateur perdu par l’OCR est restauré uniquement avec les métadonnées concordantes, sans utiliser une année", () => {
+  assert.equal(photoReading([base], "Dracaufeu\n©1999\n4102").number, "4/102");
+  assert.equal(photoReading([base], "Dracaufeu\n4103").number, "");
+  assert.equal(
+    photoReading([{ ...base, set: undefined }], "Dracaufeu\n4102").number,
+    "",
+  );
+  assert.equal(
+    photoReading(
+      [card("x-20", "Dracaufeu", "20", "Test", 24)],
+      "Dracaufeu\n©2024",
+    ).number,
+    "",
+  );
+});
+test("une erreur OCR de lettre est rapprochée du catalogue uniquement avec un numéro concordant", () => {
+  const reading = photoReading([base], "Dracautfeu PV 120\n4/1O2");
+  assert.equal(reading.name, "Dracaufeu");
+  assert.equal(reading.number, "4/102");
+  assert.equal(reading.matches[0].id, base.id);
+  assert.equal(photoReading([base], "Dracautfeu\n5/102").name, "");
+  const similar = [
+    card("x-4", "Mewna", "4", "Test", 102),
+    card("y-4", "Mewno", "4", "Test", 102),
+  ];
+  assert.equal(photoReading(similar, "Mewne\n4/102").name, "");
+});
+test("le numéro du bas est préféré aux nombres des attaques ; les totaux de sous-séries restent valides", () => {
+  assert.equal(detectedNumber("Dracaufeu\nAttaque 10/20\n4 / 1O2"), "4/102");
+  assert.equal(detectedNumber("Mew\nTG01/TG30\n©2024"), "TG01/TG30");
+  assert.equal(detectedNumber("Mew\nHolo/Holo"), "");
+  const subset = card("set-TG01", "Mew", "TG01", "Test", 185);
+  assert.equal(
+    resolveReference([subset], { name: "Mew", number: "TG01/TG30" }).card?.id,
+    subset.id,
+  );
+  const mismatchedTotal = resolveReference([base], {
+    name: "Dracaufeu",
+    number: "4/99",
+  });
+  assert.equal(mismatchedTotal.card, null);
+  assert.equal(mismatchedTotal.identity.name, "Dracaufeu");
+});
+test("l’échec indique le champ absent ou le rapprochement catalogue, sans attribuer un reflet à la photo", () => {
+  assert.match(
+    incompleteReadingReason({ name: "Dracaufeu" }),
+    /Nom lu.*numéro reste illisible/,
+  );
+  assert.match(
+    incompleteReadingReason({ number: "4/102" }),
+    /Numéro lu.*nom n’a pas été reconnu/,
+  );
+  assert.match(
+    resolveReference([], { name: "Dracaufeu", number: "4/102" }).reason,
+    /Référence exacte non retrouvée/,
+  );
 });
 const base = card("base1-4", "Dracaufeu", "4", "Set de Base", 102);
 const reprint = card("base2-4", "Dracaufeu", "4", "Réédition", 102);
