@@ -25,6 +25,13 @@ import {
   resolveCatalogue,
 } from "./catalog.js";
 import { readPhoto, download } from "./photos.js";
+import {
+  checkVintedHelper,
+  makeVintedDraft,
+  sendToVinted,
+  getVintedStatus,
+  downloadVintedExtension,
+} from "./vinted-transfer.js";
 const app = document.querySelector("#app");
 let cards = [],
   active = null,
@@ -36,6 +43,7 @@ let cards = [],
   busy = false,
   query = "",
   statusFilter = "all";
+let vintedHelper = false;
 const steps = ["Photos", "Identification", "État", "Estimation", "Annonce"];
 const icons = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
@@ -146,7 +154,7 @@ function renderInventory() {
 }
 function renderSettings() {
   shell(
-    `<div class="page-heading"><div><div class="eyebrow">DONNÉES & SERVICES</div><h1>Vous gardez la main.</h1><p>Un espace local, des sources identifiées et aucun mot de passe à partager.</p></div></div><div class="two-cols"><section class="panel"><h2>Vos sauvegardes</h2><p>Les cartes et les photos sont enregistrées avec IndexedDB dans ce navigateur. Elles ne sont pas synchronisées entre appareils. Effacer les données du navigateur les supprime.</p><p>Exportez un fichier JSON pour conserver vos originaux et reprendre votre inventaire ailleurs.</p><div class="actions">${btn(icon("download") + " Exporter l’inventaire", "export")}<label class="button secondary">Restaurer une sauvegarde<input type="file" id="restore" accept="application/json" hidden></label></div><p class="muted">Import limité à 50 Mo. Les exemplaires sont importés sous de nouveaux identifiants, sans remplacer les cartes existantes.</p></section><section class="panel"><h2>Services connectés</h2><div class="service-row"><div><strong>TCGdex</strong><small>Catalogue public & indicateurs de marché</small></div>${badge("Disponible en ligne")}</div><div class="service-row"><div><strong>Tesseract.js</strong><small>Lecture du texte dans votre navigateur</small></div>${badge("OCR local")}</div><div class="service-row"><div><strong>Vinted</strong><small>Transfert manuel · aucune session stockée</small></div>${badge("Assisté")}</div><p class="muted">L’OCR charge ses modèles depuis cette application. Les recherches transmettent le nom, le numéro et la langue à TCGdex, mais pas vos photos. Le mode IA optionnel envoie recto et verso à OpenAI via votre serveur après votre accord. La publication automatique reste indisponible.</p></section></div><section class="panel"><h2>Analyse photo par IA (optionnelle)</h2><p>Configurez la clé OpenAI uniquement dans le fichier .env du serveur. Ici, saisissez le code d’accès APP_ACCESS_TOKEN de votre instance, jamais la clé OpenAI. Ce code reste dans cet onglet et disparaît à sa fermeture.</p><label class="field">Code d’accès au serveur IA<input id="vision-access" type="password" autocomplete="off" placeholder="Code APP_ACCESS_TOKEN configuré sur le serveur"></label><div class="actions">${btn("Enregistrer le code dans cet onglet", "save-vision-access", "secondary")}${btn("Effacer le code", "clear-vision-access", "text-button")}</div><p class="muted">Le service est optionnel et les appels API sont facturés par le fournisseur. L’identité et l’état proposés restent à confirmer. L’OCR local fonctionne sans cette configuration.</p></section><section class="panel"><h2>Comment les estimations sont calculées</h2><p>Au moins trois comparables confirmés, en euros, de moins de 90 jours, pour la même référence, variante, langue et état. Les marchés et les prix demandés/ventes réalisées sont séparés. Les doublons et prix au-delà de quatre fois ou en dessous du quart de la médiane sont exclus. Une fourchette interquartile est affichée ; elle n’est pas une garantie de vente.</p><p>Les tendances Cardmarket relayées par TCGdex sont des agrégats qui ne certifient ni la langue ni l’état de votre carte. Elles ne sont jamais utilisées seules pour une estimation selon l’état.</p></section>`,
+    `<div class="page-heading"><div><div class="eyebrow">DONNÉES & SERVICES</div><h1>Vous gardez la main.</h1><p>Un espace local, des sources identifiées et aucun mot de passe à partager.</p></div></div><div class="two-cols"><section class="panel"><h2>Vos sauvegardes</h2><p>Les cartes et les photos sont enregistrées avec IndexedDB dans ce navigateur. Elles ne sont pas synchronisées entre appareils. Effacer les données du navigateur les supprime.</p><p>Exportez un fichier JSON pour conserver vos originaux et reprendre votre inventaire ailleurs.</p><div class="actions">${btn(icon("download") + " Exporter l’inventaire", "export")}<label class="button secondary">Restaurer une sauvegarde<input type="file" id="restore" accept="application/json" hidden></label></div><p class="muted">Import limité à 50 Mo. Les exemplaires sont importés sous de nouveaux identifiants, sans remplacer les cartes existantes.</p></section><section class="panel"><h2>Services connectés</h2><div class="service-row"><div><strong>TCGdex</strong><small>Catalogue public & indicateurs de marché</small></div>${badge("Disponible en ligne")}</div><div class="service-row"><div><strong>Tesseract.js</strong><small>Lecture du texte dans votre navigateur</small></div>${badge("OCR local")}</div><div class="service-row"><div><strong>Vinted</strong><small>Remplissage via le compagnon Chrome / Edge</small></div>${badge("Assisté")}</div><p class="muted">L’OCR charge ses modèles depuis cette application. Les recherches transmettent le nom, le numéro et la langue à TCGdex, mais pas vos photos. Le mode IA optionnel envoie recto et verso à OpenAI via votre serveur après votre accord. Le compagnon remplit le formulaire ; vous terminez la publication sur Vinted.</p></section></div><section class="panel"><h2>Analyse photo par IA (optionnelle)</h2><p>Configurez la clé OpenAI uniquement dans le fichier .env du serveur. Ici, saisissez le code d’accès APP_ACCESS_TOKEN de votre instance, jamais la clé OpenAI. Ce code reste dans cet onglet et disparaît à sa fermeture.</p><label class="field">Code d’accès au serveur IA<input id="vision-access" type="password" autocomplete="off" placeholder="Code APP_ACCESS_TOKEN configuré sur le serveur"></label><div class="actions">${btn("Enregistrer le code dans cet onglet", "save-vision-access", "secondary")}${btn("Effacer le code", "clear-vision-access", "text-button")}</div><p class="muted">Le service est optionnel et les appels API sont facturés par le fournisseur. L’identité et l’état proposés restent à confirmer. L’OCR local fonctionne sans cette configuration.</p></section><section class="panel"><h2>Comment les estimations sont calculées</h2><p>Au moins trois comparables confirmés, en euros, de moins de 90 jours, pour la même référence, variante, langue et état. Les marchés et les prix demandés/ventes réalisées sont séparés. Les doublons et prix au-delà de quatre fois ou en dessous du quart de la médiane sont exclus. Une fourchette interquartile est affichée ; elle n’est pas une garantie de vente.</p><p>Les tendances Cardmarket relayées par TCGdex sont des agrégats qui ne certifient ni la langue ni l’état de votre carte. Elles ne sont jamais utilisées seules pour une estimation selon l’état.</p></section>`,
   );
 }
 function renderEditor() {
@@ -343,6 +351,12 @@ function priceView(e) {
     ],
   )}${input("Prix de mise en vente choisi (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}</div>${e.available ? btn(`Utiliser le prix conseillé : ${money(e.price)}`, "apply-price", "secondary") : ""}<p class="muted">Vous pouvez saisir votre propre prix. Les indicateurs ne garantissent pas une vente.</p></div>`;
 }
+function vintedInstallationView() {
+  return `<details id="vinted-install"><summary>Activer le remplissage Vinted (une seule fois)</summary><p>Sur cet ordinateur, installez le compagnon dans Chrome ou Edge.</p><ol><li>${btn("Télécharger l’extension Chrome / Edge", "vinted-extension-download", "secondary")} puis décompressez le ZIP.</li><li>Ouvrez <strong>chrome://extensions</strong> (ou <strong>edge://extensions</strong>) et activez le mode développeur.</li><li>Cliquez sur « Charger l’extension non empaquetée » et sélectionnez le dossier <strong>poke-scan-sell-vinted</strong>.</li><li>Rechargez cette application. Le bouton « Remplir mon annonce sur Vinted » enverra ensuite les informations et les photos.</li></ol><p class="muted">Le compagnon téléchargé est associé à l’adresse de cette application. Les photos transitent dans ce navigateur avant leur envoi à Vinted. Votre connexion se fait directement sur Vinted.</p></details>`;
+}
+function vintedTransferView(errors) {
+  return `<div class="transfer"><h3>Remplir votre annonce Vinted</h3><p>Envoyez le titre, la description, le prix et vos photos originales en un clic. La catégorie et l’état sont sélectionnés lorsqu’ils sont reconnus dans le formulaire.</p><p id="vinted-connection-status" class="muted">${vintedHelper ? "Compagnon Vinted connecté." : "Activez le compagnon Chrome / Edge une seule fois pour utiliser le remplissage."}</p><div class="actions">${btn(icon("arrow") + " Remplir mon annonce sur Vinted", "vinted-fill", "primary", errors.length ? "disabled" : "")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div><p id="vinted-transfer-status" role="status">${esc(active.vintedTransferMessage || "Vérifiez les photos et les champs demandés sur Vinted, puis publiez votre annonce.")}</p>${vintedInstallationView()}<details><summary>Ouvrir Vinted pour un transfert manuel</summary><a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a><p>Le titre et la description peuvent aussi être copiés avec les boutons ci-dessus ; le ZIP contient vos photos.</p></details></div>`;
+}
 function listingView(compact = false) {
   compact = compact === true;
   const errors = readyErrors(active);
@@ -353,7 +367,7 @@ function listingView(compact = false) {
       "La carte a été modifiée : régénérez et relisez le texte de l’annonce.",
     );
   const generationErrors = readyErrors(active);
-  return `<div class="panel"><div class="eyebrow">${compact ? "VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2>Votre annonce, prête à être relue.</h2><p>Préparez les informations, puis transférez-les sur Vinted. La publication automatique nécessite encore un accès autorisé.</p><p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div><div class="transfer"><h3>Passer à la mise en vente</h3><p>1. Téléchargez le dossier contenant vos photos et l’annonce.<br>2. Ouvrez Vinted et transférez les informations.<br>3. Après publication, enregistrez le lien ci-dessous.</p><div class="actions">${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "primary", errors.length ? "disabled" : "")}<a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a></div></div>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
+  return `<div class="panel"><div class="eyebrow">${compact ? "VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2>Votre annonce, prête à être relue.</h2><p>Relisez votre annonce, puis envoyez-la au formulaire Vinted avec vos photos.</p><p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div>${vintedTransferView(errors)}${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
     active.history
       .slice()
       .reverse()
@@ -393,6 +407,8 @@ function clearIdentity() {
   invalidateListing();
 }
 function invalidateListing() {
+  delete active.vintedTransferId;
+  delete active.vintedTransferMessage;
   if (!["Vendue", "Archivée"].includes(active.status))
     active.status = "À vérifier";
 }
@@ -467,6 +483,37 @@ app.addEventListener("click", async (event) => {
   }
   const action = target.dataset.action;
   await runJobQuiet(async () => {
+    if (action === "vinted-extension-download") {
+      await runJob("Préparation de l’extension…", downloadVintedExtension);
+      return;
+    }
+    if (action === "vinted-fill") {
+      await runJob("Connexion au compagnon Vinted…", async () => {
+        makeVintedDraft(active);
+        vintedHelper = await checkVintedHelper();
+        if (!vintedHelper) {
+          render();
+          const instructions = document.querySelector("#vinted-install");
+          instructions.open = true;
+          instructions.scrollIntoView({ behavior: "smooth", block: "start" });
+          toast(
+            "Activez le compagnon une seule fois, puis rechargez l’application.",
+          );
+          return;
+        }
+        const transfer = await sendToVinted(active, (message) => {
+          const status = document.querySelector("#vinted-transfer-status");
+          if (status) status.textContent = message;
+        });
+        active.vintedTransferId = transfer.id;
+        active.vintedTransferMessage =
+          "Annonce envoyée au compagnon. Le remplissage reprend dès que le formulaire Vinted est accessible.";
+        log("Annonce et photos transmises au compagnon Vinted");
+        await persist();
+        render();
+      });
+      return;
+    }
     if (["dashboard", "inventory", "settings"].includes(action)) {
       view = action;
       render();
@@ -890,6 +937,10 @@ app.addEventListener("change", (event) =>
     if (el.dataset.field) {
       const f = el.dataset.field;
       active[f] = el.type === "checkbox" ? el.checked : el.value;
+      if (["title", "description"].includes(f)) {
+        delete active.vintedTransferId;
+        delete active.vintedTransferMessage;
+      }
       if (["name", "number", "set", "language"].includes(f)) clearIdentity();
       if (f === "variant") {
         active.identityConfirmed = false;
@@ -1064,3 +1115,29 @@ try {
   app.innerHTML =
     '<main class="fatal"><h1>Le stockage local est indisponible.</h1><p>Autorisez les données de ce site dans votre navigateur pour conserver vos cartes.</p></main>';
 }
+async function refreshVintedConnection() {
+  vintedHelper = await checkVintedHelper();
+  const connection = document.querySelector("#vinted-connection-status");
+  if (connection)
+    connection.textContent = vintedHelper
+      ? "Compagnon Vinted connecté."
+      : "Activez le compagnon Chrome / Edge une seule fois pour utiliser le remplissage.";
+  if (!vintedHelper || !active?.vintedTransferId) return;
+  const card = active;
+  try {
+    const receipt = await getVintedStatus(card.vintedTransferId);
+    if (active !== card) return;
+    if (receipt.status === "filled")
+      card.vintedTransferMessage =
+        "Titre, description et prix remplis ; photos transmises au formulaire. Vérifiez le résultat et les champs restants sur Vinted avant de publier.";
+    else if (["partial", "blocked"].includes(receipt.status))
+      card.vintedTransferMessage =
+        "Le remplissage demande votre attention. Consultez le message Poke Scan Sell dans l’onglet Vinted pour reprendre ou compléter les champs.";
+    const status = document.querySelector("#vinted-transfer-status");
+    if (status) status.textContent = card.vintedTransferMessage;
+  } catch {
+    // A closed or expired transfer can be sent again from the current draft.
+  }
+}
+window.addEventListener("focus", refreshVintedConnection);
+refreshVintedConnection();

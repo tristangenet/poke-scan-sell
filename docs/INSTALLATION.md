@@ -15,6 +15,10 @@ Ouvrir http://localhost:5173. Le bouton Ajouter une carte démarre un exemplaire
 
 Les données appartiennent à l'origine du site : localhost:5173 et localhost:3001 ont des inventaires distincts. Exporter puis restaurer pour transférer. Pas de synchronisation automatique entre téléphone et ordinateur.
 
+## Remplissage Vinted
+
+Depuis une annonce validée, ouvrir « Activer le remplissage Vinted », puis suivre l’installation du compagnon dans Chrome ou Edge sur ordinateur. Le ZIP est généré pour l’adresse exacte de l’application. [Guide et limites du transfert](VINTED.md).
+
 ## Analyse IA optionnelle
 
 1. Copier `.env.example` vers `.env`.

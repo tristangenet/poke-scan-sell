@@ -1,17 +1,23 @@
-# Validation — version 0.2.5
+# Validation — version 0.2.6
 
 Vérifications effectuées le 1 octobre 2026.
 
 | Vérification                               | Résultat                                                   |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
-| Tests unitaires et serveur Node            | 34 réussis                                                 |
-| Parcours navigateur Chromium               | 14 réussis                                                 |
+| Tests unitaires et serveur Node            | 37 réussis                                                 |
+| Parcours navigateur Chromium               | 21 réussis                                                 |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
 | Appel IA OpenAI avec une clé réelle        | Non exécuté ; connecteur validé avec réponses simulées     |
 | Publication réelle sur Vinted              | Non exécutée ; mode manuel assisté uniquement              |
+
+## Transfert Vinted
+
+Sept nouveaux parcours navigateur : saisie du titre et de la description corrigée, prix décimal, catégorie et état par libellés, conservation octet par octet des deux photos, absence de clic Publier, protection d’un brouillon existant, champs non reconnus signalés, installation guidée sans extension, contenu et association du ZIP à l’origine exacte, transfert en un clic depuis une carte validée et blocage après modification du prix. La file IndexedDB réelle et les scripts réels sont aussi exercés de l’application jusqu’au formulaire de contrôle, avec API Chrome de messages/onglets simulées : connexion en attente puis reprise dans le même onglet, rejet d’une autre application, résultat retourné et suppression des originaux temporaires après transfert complet.
+
+Trois tests de protocole vérifient l’identifiant stable de l’extension, l’origine exacte de l’application, les limites du texte/prix, le recto/verso et la validation des photos locales jusqu’à 10 Mo. Le Chromium disponible ne permet pas de charger l’extension complète ; Chrome for Testing a été téléchargé mais son démarrage est bloqué par une restriction de sockets de l’environnement. Le chargement Manifest V3 et le formulaire réel d’un compte Vinted connecté restent donc à valider dans le navigateur utilisateur. Le site réel a redirigé vers la connexion lors de la visite du 1 octobre. Aucun compte Vinted ni annonce réelle n’a été créé ou modifié.
 
 ## Mode rapide
 

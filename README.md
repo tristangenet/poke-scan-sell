@@ -4,7 +4,7 @@ Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, v
 
 ![Vue d’ensemble de l’application](docs/screenshots/desktop.png)
 
-## Version 0.2.5 — mode rapide
+## Version 0.2.6 — mode rapide
 
 Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
 
@@ -25,10 +25,10 @@ Fonctionnalités livrées :
 - Tendances Cardmarket relayées par TCGdex, clairement distinguées d'une estimation selon état.
 - Comparables saisis et confirmés par le vendeur, calcul de fourchette et stratégies de prix.
 - Annonces modifiables, copier-coller et dossier ZIP avec les photos originales.
-- Ouverture de Vinted et suivi manuel de la publication/vente.
+- Remplissage Vinted par un compagnon Chrome / Edge : titre, description, prix, photos originales, catégorie et état lorsqu’ils sont reconnus ; suivi manuel de la publication/vente.
 - Sauvegarde JSON, restauration sans écrasement, recherche, filtres et archivage.
 
-**La collecte automatique des comparables par état, le remplissage et la publication automatiques sur Vinted ne sont pas disponibles.** Ces fonctions restent dépendantes d'accès autorisés. Aucun prix ou résultat de publication n'est simulé.
+**Le remplissage du formulaire Vinted est développé via le compagnon Chrome / Edge, à installer une fois depuis l’application.** Il a été testé sur des formulaires de contrôle ; la validation du formulaire réel avec un compte connecté reste à effectuer. Les champs non reconnus sont signalés. La collecte automatique des comparables par état et la publication automatique restent indisponibles. Aucun prix ou résultat de publication n’est simulé.
 
 ## Démarrer
 
@@ -48,6 +48,12 @@ npm start
 ```
 
 Ouvrir http://localhost:3001. L'application fonctionne sans clé API en mode OCR et saisie guidée.
+
+## Remplir Vinted
+
+Après validation de votre carte, cliquez sur **Remplir mon annonce sur Vinted**. À la première utilisation, ouvrez **Activer le remplissage Vinted**, téléchargez et décompressez l’extension, puis chargez le dossier dans `chrome://extensions` ou `edge://extensions` avec le mode développeur activé. Rechargez l’application ; le même bouton enverra ensuite le texte corrigé, le prix et les photos.
+
+Le compagnon est associé à l’origine exacte de l’application qui a fourni le ZIP. Une autre adresse nécessite un nouveau téléchargement de l’extension. Il attend la connexion sur Vinted, conserve un brouillon existant au lieu de l’écraser, signale les champs restants et laisse le clic **Publier** au vendeur. Voir [le guide Vinted](docs/VINTED.md).
 
 ## Activer l'analyse IA
 
