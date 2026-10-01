@@ -4,11 +4,11 @@ Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, v
 
 ![Vue d’ensemble de l’application](docs/screenshots/desktop.png)
 
-## Version 0.2.0 — mode rapide
+## Version 0.2.1 — mode rapide
 
 Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
 
-Le mode rapide est affiché par défaut : **recto + verso → Préparer ma carte → vérifier → Valider et créer l’annonce**. Une seule préparation enchaîne l’OCR (ou l’IA optionnelle), la recherche catalogue et le chargement des indicateurs de marché. Une référence est proposée automatiquement lorsque les candidats sont départagés par le numéro complet ; les ambiguïtés restent visibles. La variante unique du catalogue est préremplie, toujours à vérifier.
+Le mode rapide est affiché par défaut : **recto + verso → Préparer ma carte → vérifier → Valider et créer l’annonce**. Une seule préparation enchaîne l’OCR (ou l’IA optionnelle), la recherche catalogue et le chargement des indicateurs de marché. La référence est remplie automatiquement en croisant le nom, le numéro (complet, isolé ou promo) et le texte de l’extension lorsqu’il est lisible. Cela fonctionne aussi avec le bouton OCR des options avancées. Le mode rapide ne demande plus de sélectionner une carte dans une liste : en cas d’ambiguïté ou de lecture incomplète, il demande une nouvelle photo. Les symboles graphiques ne sont pas reconnus par l’OCR local ; l’analyse IA configurée ou une correction manuelle peut rester nécessaire. La variante unique du catalogue est préremplie, toujours à vérifier.
 
 La tendance Cardmarket peut être choisie comme point de départ en un clic, sans saisir trois comparables. Elle reste un agrégat général, pas un prix de vente garanti ni une estimation selon état. L’état peut être proposé par l’IA configurée. Une seule validation confirme identité et état puis génère le texte. L’emballage et le libellé Vinted sont mémorisés après cette validation pour les prochaines cartes. Les options avancées conservent le parcours détaillé et les comparables.
 

@@ -1,4 +1,5 @@
 import "./style.css";
+import packageInfo from "../package.json";
 import { analyzePhotos } from "./vision.js";
 import {
   CONDITIONS,
@@ -17,6 +18,7 @@ import {
 } from "./domain.js";
 import { listCards, saveCard, deleteCard, importCards } from "./storage.js";
 import { searchCards, getCard, recognizePhoto } from "./catalog.js";
+import { resolveReference } from "./recognition.js";
 import { readPhoto, download } from "./photos.js";
 const app = document.querySelector("#app");
 let cards = [],
@@ -95,7 +97,7 @@ function shell(content) {
     )
     .join(
       "",
-    )}</nav><div class="sidebar-bottom"><span class="dot"></span> Espace local<div>Vos photos restent dans ce navigateur.<br>Exportez régulièrement une sauvegarde.</div>${btn(icon("download") + " Sauvegarder", "export", "sidebar-export")}</div></aside><div class="workspace"><header class="topbar"><div><span class="breadcrumb">MON ATELIER</span><span class="top-path"> / ${view === "editor" ? "Nouvelle annonce" : view === "inventory" ? "Collection" : view === "settings" ? "Paramètres" : "Vue d’ensemble"}</span></div><div class="local-pill"><span class="dot"></span> Stockage local <span class="avatar">T</span></div></header><main>${content}</main><footer>Poke Scan Sell <span>Un outil indépendant pour votre collection.</span></footer></div>`;
+    )}</nav><div class="sidebar-bottom"><span class="dot"></span> Espace local<div>Vos photos restent dans ce navigateur.<br>Exportez régulièrement une sauvegarde.</div>${btn(icon("download") + " Sauvegarder", "export", "sidebar-export")}</div></aside><div class="workspace"><header class="topbar"><div><span class="breadcrumb">MON ATELIER</span><span class="top-path"> / ${view === "editor" ? "Nouvelle annonce" : view === "inventory" ? "Collection" : view === "settings" ? "Paramètres" : "Vue d’ensemble"}</span></div><div class="local-pill"><span class="dot"></span> Stockage local <span class="avatar">T</span></div></header><main>${content}</main><footer>Poke Scan Sell · v${esc(packageInfo.version)} <span>Un outil indépendant pour votre collection.</span></footer></div>`;
 }
 function cardVisual(c) {
   const photo = c.photos.find((p) => p.side === "front");
@@ -171,7 +173,7 @@ function renderQuickEditor() {
     ${
       detected
         ? `<section class="panel"><div class="eyebrow">VÉRIFICATION FINALE</div><h2>Vérifiez, ajustez, puis validez.</h2>
-    ${candidates.length ? `<p class="notice amber">Plusieurs références possibles : choisissez votre édition.</p><div class="candidates">${candidates.map((c) => `<button class="candidate" data-action="candidate" data-id="${esc(c.id)}"><strong>${esc(c.name)}</strong><small>${esc(c.localId)} · ${esc(c.id)}</small><span>Choisir cette référence</span></button>`).join("")}</div>` : ""}
+    ${!active.catalogId ? `<p class="notice amber">${esc(quickMessage || "Reprenez une photo lisible du nom et du numéro.")}</p>` : `<p class="notice">Carte identifiée automatiquement · ${esc(active.catalogId)}</p>`}
     <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}${input("Extension", "set", active.set)}${active.variantOptions?.length ? select("Variante à vérifier", "variant", active.variant, [["", "Choisir"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition", "variant", active.variant)}</div>
     <div class="form-grid">${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}${input("État sur Vinted", "vintedCondition", active.vintedCondition)}</div>
     ${active.aiAnalysis ? `<p class="notice">Proposition IA : ${esc(active.aiAnalysis.condition)} · ${esc(active.aiAnalysis.confidence)}. ${active.aiAnalysis.defects.map(esc).join(" ; ")}${active.aiAnalysis.warnings.map((w) => `<br>${esc(w)}`).join("")}</p>` : '<p class="muted">Sans IA configurée, l’état reste à choisir après examen des deux faces.</p>'}
@@ -240,32 +242,19 @@ async function prepareQuickCard(useAI) {
     if (result.number) active.number = result.number;
     candidates = result.matches;
   }
-  // Only preselect an unambiguous candidate with a detected full number.
-  const total = detectedNumber.split("/")[1];
-  if (total && candidates.length && candidates.length < 24) {
-    const responses = await Promise.allSettled(
-      candidates.map((c) => getCard(c.id, active.language)),
-    );
-    const complete = responses.every((r) => r.status === "fulfilled");
-    const details = responses
-      .filter((r) => r.status === "fulfilled")
-      .map((r) => r.value);
-    const matching = details.filter(
-      (c) => String(c.set.cardCount.official) === String(Number(total)),
-    );
-    if (complete && matching.length === 1) {
-      await applyCatalog(matching[0].id);
-      if (active.variantOptions.length === 1)
-        active.variant = active.variantOptions[0];
-      if (aiVariant) active.variant = aiVariant;
-    } else if (complete && matching.length) candidates = matching;
-  }
+  const resolution = await identifyFromEvidence(
+    {
+      number: detectedNumber,
+      name: !result ? active.aiAnalysis?.name : "",
+      set: active.aiAnalysis?.set || "",
+      text: result?.text || "",
+    },
+    !result?.truncated,
+  );
+  if (active.catalogId && aiVariant) active.variant = aiVariant;
   quickMessage = [
     quickMessage.startsWith("IA indisponible") ? quickMessage : "",
-    result?.warning ||
-      (active.catalogId
-        ? "Référence proposée. Vérifiez la variante, l’état et le prix ci-dessous."
-        : "Vérifiez les correspondances ou corrigez les informations dans les options avancées."),
+    result?.warning || resolution.reason,
   ]
     .filter(Boolean)
     .join(" ");
@@ -377,8 +366,8 @@ function invalidateListing() {
   if (!["Vendue", "Archivée"].includes(active.status))
     active.status = "À vérifier";
 }
-async function applyCatalog(id) {
-  const result = await getCard(id, active.language);
+async function applyCatalog(id, loaded = null) {
+  const result = loaded || (await getCard(id, active.language));
   active.catalogId = result.id;
   active.name = result.name;
   active.number =
@@ -394,7 +383,7 @@ async function applyCatalog(id) {
     active.variantOptions = Object.entries(result.variants || {})
       .filter(([, yes]) => yes)
       .map(([v]) => v);
-  if (quickMode && active.variantOptions.length === 1)
+  if (active.variantOptions.length === 1)
     active.variant = active.variantOptions[0];
   setMarket(result);
   active.identityConfirmed = false;
@@ -403,6 +392,22 @@ async function applyCatalog(id) {
   await persist();
   render();
   toast("Référence sélectionnée. Confirmez la variante de votre exemplaire.");
+}
+async function identifyFromEvidence(evidence, complete = true) {
+  if (!candidates.length) return resolveReference([], evidence, complete);
+  const responses = await Promise.allSettled(
+    candidates.map((c) => getCard(c.id, active.language)),
+  );
+  const allLoaded =
+    complete &&
+    candidates.length < 24 &&
+    responses.every((r) => r.status === "fulfilled");
+  const details = responses
+    .filter((r) => r.status === "fulfilled")
+    .map((r) => r.value);
+  const resolution = resolveReference(details, evidence, allLoaded);
+  if (resolution.card) await applyCatalog(resolution.card.id, resolution.card);
+  return resolution;
 }
 function setMarket(result) {
   const m = result.pricing?.cardmarket;
@@ -634,14 +639,15 @@ app.addEventListener("click", async (event) => {
           if (result.number) active.number = result.number;
           candidates = result.matches;
           active.identityConfirmed = false;
+          clearIdentity();
+          const resolution = await identifyFromEvidence(
+            { number: result.number, text: result.text },
+            !result.truncated,
+          );
+          quickMessage = resolution.reason;
           await persist();
           render();
-          toast(
-            result.warning ||
-              (candidates.length
-                ? "Choisissez et vérifiez la référence détectée."
-                : "Texte lu. Aucun candidat certain : utilisez la recherche manuelle."),
-          );
+          toast(result.warning || resolution.reason);
         },
       );
       return;

@@ -222,7 +222,15 @@ test("OCR réel avec moteur local : nom et numéro lus sur une image synthétiqu
   test.setTimeout(60000);
   await page.route("https://api.tcgdex.net/**", (route) =>
     route.fulfill({
-      json: [{ id: "base1-4", name: "Dracaufeu", localId: "4" }],
+      json: route.request().url().endsWith("/cards")
+        ? [{ id: "base1-4", name: "Dracaufeu", localId: "4" }]
+        : {
+            id: "base1-4",
+            name: "Dracaufeu",
+            localId: "4",
+            set: { name: "Set de Base", cardCount: { official: 102 } },
+            variants: { holo: true },
+          },
     }),
   );
   await page.goto("/");
@@ -258,7 +266,9 @@ test("OCR réel avec moteur local : nom et numéro lus sur une image synthétiqu
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102", {
     timeout: 45000,
   });
-  await expect(page.locator(".candidates")).toContainText("Dracaufeu");
+  await expect(page.locator(".candidate")).toHaveCount(0);
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
+  await expect(page.locator('[data-field="set"]')).toHaveValue("Set de Base");
   await expect(
     page.locator('[data-field="identityConfirmed"]'),
   ).not.toBeChecked();

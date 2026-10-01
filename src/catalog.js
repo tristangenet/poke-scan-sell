@@ -1,4 +1,5 @@
-import { normalize, normalizeNumber, parseOCR } from "./domain.js";
+import { normalizeNumber } from "./domain.js";
+import { namesInText, detectedNumber } from "./recognition.js";
 const API = "https://api.tcgdex.net/v2";
 async function get(path) {
   const r = await fetch(API + path, { signal: AbortSignal.timeout(20000) });
@@ -39,7 +40,7 @@ export async function recognizePhoto(data, language, onProgress) {
   });
   try {
     const result = await worker.recognize(data);
-    const parsed = parseOCR(result.data.text);
+    const number = detectedNumber(result.data.text);
     let cards = [];
     let warning = "";
     try {
@@ -48,17 +49,18 @@ export async function recognizePhoto(data, language, onProgress) {
       warning =
         "Texte lu, mais catalogue indisponible. Réessayez la recherche plus tard.";
     }
-    const words = normalize(result.data.text);
-    const matches = cards
-      .filter(
-        (c) =>
-          normalize(c.name).length > 3 &&
-          words.includes(normalize(c.name)) &&
-          (!parsed.number ||
-            normalizeNumber(c.localId) === normalizeNumber(parsed.number)),
-      )
-      .slice(0, 24);
-    return { text: result.data.text, number: parsed.number, matches, warning };
+    const matches = namesInText(cards, result.data.text).filter(
+      (c) =>
+        !/^A[0-9]/.test(c.id) &&
+        (!number || normalizeNumber(c.localId) === normalizeNumber(number)),
+    );
+    return {
+      text: result.data.text,
+      number,
+      matches: matches.slice(0, 24),
+      truncated: matches.length > 24,
+      warning,
+    };
   } finally {
     await worker.terminate();
   }

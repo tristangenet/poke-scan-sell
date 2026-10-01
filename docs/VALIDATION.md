@@ -1,11 +1,11 @@
-# Validation — version 0.2.0
+# Validation — version 0.2.1
 
 Vérifications effectuées le 1 octobre 2026.
 
 | Vérification                               | Résultat                                                   |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
-| Tests unitaires et serveur Node            | 13 réussis                                                 |
+| Tests unitaires et serveur Node            | 17 réussis                                                 |
 | Parcours navigateur Chromium               | 7 réussis                                                  |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
@@ -15,7 +15,7 @@ Vérifications effectuées le 1 octobre 2026.
 
 ## Mode rapide
 
-OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état et emballage, validation unique et génération, blocage du ZIP après changement de prix, réutilisation des préférences d’emballage. Deux éditions avec le même numéro complet restent à choisir. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
+OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état et emballage, validation unique et génération, blocage du ZIP après changement de prix, réutilisation des préférences d’emballage. Deux éditions avec le même numéro complet provoquent une demande de nouvelle photo, sans liste de choix dans le mode rapide. Tests du résolveur : extension lisible départageant les éditions, suffixes ex, noms courts, numéros isolés et promos, refus des contradictions et des catalogues incomplets. Le bouton OCR du mode avancé applique aussi la référence automatiquement. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
 
 ## Parcours navigateur
 

@@ -148,7 +148,10 @@ test("une édition ambiguë n’est pas sélectionnée automatiquement", async (
     .click();
   await addPhotos(page);
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
-  await expect(page.locator(".candidate")).toHaveCount(2, { timeout: 45000 });
+  await expect(page.locator("#job-status")).toContainText("ne distingue pas", {
+    timeout: 45000,
+  });
+  await expect(page.locator(".candidate")).toHaveCount(0);
   await expect(page.locator('[data-field="name"]')).toHaveValue("");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
 });
