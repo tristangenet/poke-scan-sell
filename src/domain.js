@@ -53,8 +53,6 @@ export function newCard() {
     status: "À identifier",
     price: "",
     strategy: "balanced",
-    packaging: "",
-    vintedCondition: "",
     title: "",
     description: "",
     listingUrl: "",
@@ -171,10 +169,6 @@ export function readyErrors(c) {
     errors.push("Vérifier et confirmer l’état.");
   if (!Number.isFinite(+c.price) || +c.price <= 0)
     errors.push("Choisir un prix positif.");
-  if (!c.vintedCondition)
-    errors.push("Renseigner l’état à sélectionner sur Vinted.");
-  if (!c.packaging.trim())
-    errors.push("Préciser l’emballage réellement utilisé.");
   return errors;
 }
 export function generateListing(c) {
@@ -194,7 +188,6 @@ export function generateListing(c) {
       `État évalué par le vendeur : ${CONDITIONS[c.condition] || c.condition}.`,
       `Défauts constatés : ${[...c.defects, c.defectNotes].filter(Boolean).join(", ") || "aucun défaut signalé après vérification du vendeur"}.`,
       "Les photos montrent l’exemplaire proposé à la vente.",
-      `Protection et expédition : ${c.packaging}.`,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -237,10 +230,22 @@ export function listingFingerprint(c) {
     c.defects,
     c.defectNotes,
     String(c.price),
-    c.packaging,
-    c.vintedCondition,
     c.photos.map((p) => p.id),
   ]);
+}
+
+export function migrateCard(c) {
+  // Keep the original snapshot: a previously stale draft must stay stale.
+  try {
+    const facts = JSON.parse(c.listingFingerprint);
+    if (Array.isArray(facts) && facts.length === 14)
+      c.listingFingerprint = JSON.stringify([...facts.slice(0, 11), facts[13]]);
+  } catch {
+    // Missing or invalid fingerprints remain subject to the usual checks.
+  }
+  delete c.packaging;
+  delete c.vintedCondition;
+  return c;
 }
 
 export const normalizeNumber = (value) =>

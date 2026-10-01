@@ -7,6 +7,8 @@ import {
   generateListing,
   parseOCR,
   safeUrl,
+  listingFingerprint,
+  migrateCard,
 } from "../src/domain.js";
 const card = {
   catalogId: "base1-4",
@@ -20,7 +22,6 @@ const card = {
   photos: [],
   observations: [],
   defects: [],
-  packaging: "Protection rigide",
 };
 const now = Date.parse("2026-10-01T12:00:00Z");
 function obs(amount, extra = {}) {
@@ -118,10 +119,13 @@ test("génération requiert identité état photos et prix", () => {
     conditionConfirmed: true,
     photos: [{ side: "front" }, { side: "back" }],
     price: 12,
-    vintedCondition: "Bon état",
   };
   assert.equal(readyErrors(c).length, 0);
-  assert.match(generateListing(c).description, /Protection rigide/);
+  assert.match(generateListing(c).description, /Excellent/);
+  assert.doesNotMatch(
+    generateListing({ ...c, packaging: "Protection rigide" }).description,
+    /Protection|expédition|Emballage|État Vinted/,
+  );
   assert.doesNotMatch(generateListing(c).description, /authentique/i);
 });
 test("une annonce peut être créée sans extension ni variante, avec le nom et le numéro confirmés", () => {
@@ -134,7 +138,6 @@ test("une annonce peut être créée sans extension ni variante, avec le nom et 
     conditionConfirmed: true,
     photos: [{ side: "front" }, { side: "back" }],
     price: 12,
-    vintedCondition: "Bon état",
   };
   assert.deepEqual(readyErrors(c), []);
   const listing = generateListing(c);
@@ -159,8 +162,7 @@ test("liens externes sécurisés et domaine Vinted strict", () => {
   );
 });
 
-test("une annonce est périmée après changement d’état, prix ou photo", async () => {
-  const { listingFingerprint } = await import("../src/domain.js");
+test("une annonce est périmée après changement d’état, prix ou photo", () => {
   const c = { ...card, price: 12, photos: [{ id: "one", side: "front" }] };
   const original = listingFingerprint(c);
   assert.notEqual(listingFingerprint({ ...c, price: 13 }), original);
@@ -173,4 +175,40 @@ test("une annonce est périmée après changement d’état, prix ou photo", asy
     listingFingerprint({ ...c, description: "texte corrigé" }),
     original,
   );
+});
+
+test("migration des anciens champs : brouillon conservé et changement de prix toujours détecté", () => {
+  const c = {
+    ...card,
+    identityConfirmed: true,
+    conditionConfirmed: true,
+    price: 12,
+    photos: [
+      { id: "front", side: "front" },
+      { id: "back", side: "back" },
+    ],
+    title: "Mon titre corrigé",
+    description: "Ma description personnalisée",
+    packaging: "Protection rigide",
+    vintedCondition: "Bon état",
+  };
+  const facts = JSON.parse(listingFingerprint(c));
+  const legacy = {
+    ...c,
+    listingFingerprint: JSON.stringify([
+      ...facts.slice(0, 11),
+      c.packaging,
+      c.vintedCondition,
+      facts[11],
+    ]),
+  };
+  const migrated = migrateCard(structuredClone(legacy));
+  assert.equal(migrated.listingFingerprint, listingFingerprint(migrated));
+  assert.equal(migrated.description, c.description);
+  assert.equal(migrated.title, c.title);
+  assert.deepEqual(readyErrors(migrated), []);
+  assert.ok(!("packaging" in migrated));
+  assert.ok(!("vintedCondition" in migrated));
+  const stale = migrateCard({ ...structuredClone(legacy), price: 13 });
+  assert.notEqual(stale.listingFingerprint, listingFingerprint(stale));
 });

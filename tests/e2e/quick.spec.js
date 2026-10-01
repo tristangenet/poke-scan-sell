@@ -61,7 +61,7 @@ async function catalogue(page, ambiguous = false) {
     });
   });
 }
-test("mode rapide : OCR, référence, prix, une validation et préférences réutilisées", async ({
+test("mode rapide : OCR, référence, prix et une validation sans champs Vinted ni emballage", async ({
   page,
 }) => {
   test.setTimeout(60000);
@@ -94,22 +94,25 @@ test("mode rapide : OCR, référence, prix, une validation et préférences réu
     })
     .click();
   await expect(page.locator('[data-field="price"]')).toHaveValue("50");
+  await expect(
+    page.locator('[data-field="vintedCondition"], [data-field="packaging"]'),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
     .click();
   await expect(page.locator("#toast")).toContainText("état");
   await expect(page.locator('[data-field="title"]')).toHaveCount(0);
   await page.locator('[data-field="condition"]').selectOption("EX");
-  await page.locator('[data-field="vintedCondition"]').fill("Très bon état");
-  await page.locator('[data-field="vintedCondition"]').blur();
-  await page
-    .locator('[data-field="packaging"]')
-    .fill("Sleeve et protection rigide");
-  await page.locator('[data-field="packaging"]').blur();
   await page
     .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
     .click();
   await expect(page.locator('[data-field="title"]')).toHaveValue(/Dracaufeu/);
+  await expect(page.locator('[data-field="description"]')).toHaveValue(
+    /Excellent/,
+  );
+  await expect(page.locator('[data-field="description"]')).not.toHaveValue(
+    /Protection et expédition|État Vinted/,
+  );
   await expect(
     page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
   ).toBeEnabled();
@@ -138,12 +141,9 @@ test("mode rapide : OCR, référence, prix, une validation et préférences réu
     .getByRole("button", { name: "Saisie manuelle / options avancées" })
     .click();
   await page.getByRole("button", { name: "5 Annonce" }).click();
-  await expect(page.locator('[data-field="packaging"]')).toHaveValue(
-    "Sleeve et protection rigide",
-  );
-  await expect(page.locator('[data-field="vintedCondition"]')).toHaveValue(
-    "Très bon état",
-  );
+  await expect(
+    page.locator('[data-field="vintedCondition"], [data-field="packaging"]'),
+  ).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 test("une édition inconnue n’empêche pas de créer l’annonce à partir du nom et du numéro", async ({
@@ -176,14 +176,8 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
     }),
   ).toHaveCount(0);
   await page.locator('[data-field="condition"]').selectOption("EX");
-  await page.locator('[data-field="vintedCondition"]').fill("Très bon état");
-  await page.locator('[data-field="vintedCondition"]').blur();
   await page.locator('[data-field="price"]').fill("45");
   await page.locator('[data-field="price"]').blur();
-  await page
-    .locator('[data-field="packaging"]')
-    .fill("Sleeve et protection rigide");
-  await page.locator('[data-field="packaging"]').blur();
   await page
     .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
     .click();

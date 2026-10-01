@@ -74,11 +74,11 @@ Comparer sur une base cohérente : carte, livraison et frais acheteur séparés 
 
 ## 9. Annonce
 
-Générer titre, description, prix, catégorie proposée, état Vinted, attributs obligatoires, photos ordonnées et format de colis fondé sur l'emballage déclaré.
+Générer titre, description, prix et photos ordonnées. La préparation utilise un seul champ « État de la carte » pour l’estimation et la description. Aucun champ d’état Vinted ou d’emballage n’est demandé dans l’application ; leur absence ne bloque ni la génération ni l’export. Les attributs obligatoires de Vinted sont renseignés lors de la mise en vente sur la plateforme.
 
 Titre type : Pokémon — [Nom] — [Numéro] — [Extension] — [Langue] — [Variante].
 
-Description : identité, extension/langue/variante, état confirmé, défauts, photos de l'exemplaire vendu et modalités de protection/expédition configurées. Aucun ajout non justifié comme « authentique », « parfait », « PSA 10 » ou « très rare ». L'emballage annoncé doit correspondre à la pratique réelle.
+Description : identité, extension/langue/variante si renseignées, état de la carte confirmé, défauts et photos de l’exemplaire vendu. Aucune mention d’emballage ou d’expédition n’est ajoutée automatiquement. Aucun ajout non justifié comme « authentique », « parfait », « PSA 10 » ou « très rare ».
 
 Respecter les contraintes effectives du formulaire cible. Tous les champs sont modifiables ; une régénération ne doit pas écraser silencieusement les corrections.
 

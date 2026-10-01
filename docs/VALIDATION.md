@@ -1,11 +1,11 @@
-# Validation — version 0.2.4
+# Validation — version 0.2.5
 
 Vérifications effectuées le 1 octobre 2026.
 
 | Vérification                               | Résultat                                                   |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
-| Tests unitaires et serveur Node            | 33 réussis                                                 |
+| Tests unitaires et serveur Node            | 34 réussis                                                 |
 | Parcours navigateur Chromium               | 14 réussis                                                 |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
@@ -15,7 +15,7 @@ Vérifications effectuées le 1 octobre 2026.
 
 ## Mode rapide
 
-OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état et emballage, validation unique et génération, blocage du ZIP après changement de prix, réutilisation des préférences d’emballage. Deux éditions avec le même numéro complet conservent le nom et le numéro, sans liste de choix ni demande de reprendre la photo pour l’édition. Le parcours crée une annonce et active le ZIP avec extension et variante vides ; le titre et la description omettent ces champs. Aucune tendance de prix d’une édition arbitraire n’est proposée. Tests du résolveur : extension lisible départageant les éditions, suffixes ex, noms courts, numéros isolés et promos, refus des contradictions de nom/numéro et des catalogues incomplets ; extension contradictoire ignorée pour l’identité de base, sans attribution de fiche catalogue. Le bouton OCR du mode avancé applique aussi la référence automatiquement. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
+OCR réel sur image synthétique et catalogue simulé : proposition unique selon numéro complet, variante unique proposée, tendance choisie explicitement, refus de générer sans état de la carte, validation unique et génération sans libellé d’état Vinted ni emballage, blocage du ZIP après changement de prix. Les deux champs sont absents du mode rapide et des options avancées ; le texte généré et le ZIP omettent leurs mentions automatiques. Deux éditions avec le même numéro complet conservent le nom et le numéro, sans liste de choix ni demande de reprendre la photo pour l’édition. Le parcours crée une annonce et active le ZIP avec extension et variante vides ; le titre et la description omettent ces champs. Aucune tendance de prix d’une édition arbitraire n’est proposée. Tests du résolveur : extension lisible départageant les éditions, suffixes ex, noms courts, numéros isolés et promos, refus des contradictions de nom/numéro et des catalogues incomplets ; extension contradictoire ignorée pour l’identité de base, sans attribution de fiche catalogue. Le bouton OCR du mode avancé applique aussi la référence automatiquement. Parcours IA simulé : identité et état préremplis, variante proposée visible, aucune confirmation implicite. Aucun appel OpenAI réel.
 
 ## Régression de lecture
 
@@ -37,7 +37,7 @@ Autres scénarios : mobile sans débordement ; verso absent empêchant la confir
 
 ## Règles de calcul et serveur
 
-Les tests couvrent séparation des marchés et types de prix, refus des agrégats pour l'estimation selon état, exclusion des références/états/devises/dates incompatibles, déduplication et prix extrêmes. Les annonces périmées après modification des faits sont détectées.
+Les tests couvrent séparation des marchés et types de prix, refus des agrégats pour l'estimation selon état, exclusion des références/états/devises/dates incompatibles, déduplication et prix extrêmes. Les annonces périmées après modification des faits sont détectées. Les anciens brouillons sont migrés en supprimant les champs d’état Vinted et d’emballage ; les textes personnalisés et les contrôles de péremption sont conservés.
 
 Le serveur construit sert l'interface et les ressources ; le mode IA non configuré renvoie une indisponibilité explicite. Les tests du connecteur vérifient le schéma de réponse, l'exigence recto/verso, l'absence de conservation de la réponse via store:false, et le rejet d'un résultat incomplet/refusé. Aucun secret réel ni photo utilisateur n'a servi aux tests.
 

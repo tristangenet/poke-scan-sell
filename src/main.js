@@ -15,6 +15,7 @@ import {
   safeUrl,
   suggestedCondition,
   listingFingerprint,
+  migrateCard,
 } from "./domain.js";
 import { listCards, saveCard, deleteCard, importCards } from "./storage.js";
 import {
@@ -185,15 +186,13 @@ function renderQuickEditor() {
     <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}</div>
     ${active.ocrText ? `<details><summary>Texte lu dans la photo</summary><pre>${esc(active.ocrText)}</pre></details>` : ""}
     <details><summary>Extension et variante (facultatif)</summary><div class="form-grid">${input("Extension (facultatif)", "set", active.set)}${active.variantOptions?.length ? select("Variante (facultatif)", "variant", active.variant, [["", "Non précisée"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition (facultatif)", "variant", active.variant)}</div></details>
-    <div class="form-grid">${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}${input("État sur Vinted", "vintedCondition", active.vintedCondition)}</div>
+    ${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}
     ${active.aiAnalysis ? `<p class="notice">Proposition IA : ${esc(active.aiAnalysis.condition)} · ${esc(active.aiAnalysis.confidence)}. ${active.aiAnalysis.defects.map(esc).join(" ; ")}${active.aiAnalysis.warnings.map((w) => `<br>${esc(w)}`).join("")}</p>` : '<p class="muted">Sans IA configurée, l’état reste à choisir après examen des deux faces.</p>'}
     <label class="field">Défauts constatés<textarea data-field="defectNotes" rows="2">${esc(active.defectNotes)}</textarea></label>
     ${active.defects.length ? `<p class="notice">Défauts déjà enregistrés : ${active.defects.map(esc).join(", ")}. Modifiez-les dans les options avancées.</p>` : ""}
     <div class="quick-price"><h3>Votre prix</h3>${e.available ? `<p>Prix proposé selon vos comparables : ${money(e.price)}</p>${btn("Utiliser le prix conseillé", "apply-price", "secondary")}` : active.market?.trend ? `<p>Tendance Cardmarket : <strong>${money(active.market.trend)}</strong> · ${esc(active.market.updated || "date inconnue")}</p><p class="muted">Agrégat catalogue, sans filtrage par état, langue ou variante exacte. Ajustez le prix à votre exemplaire.</p>${btn("Utiliser cette tendance comme point de départ", "use-trend", "secondary")}` : '<p class="notice">Aucune donnée de prix exploitable disponible. Indiquez votre prix ou consultez les comparables dans les options avancées.</p>'}
     ${input("Prix de vente (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}
     <a class="inline-link" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent([active.name, active.number, active.set].join(" "))}" target="_blank" rel="noopener noreferrer">Comparer les annonces Vinted ↗</a></div>
-    ${input("Emballage réellement utilisé", "packaging", active.packaging, "text", 'placeholder="Ex. sleeve et protection rigide"')}
-    <p class="muted">L’emballage et le libellé Vinted seront mémorisés pour vos prochaines cartes dans ce navigateur. Vérifiez qu’ils conviennent à cet exemplaire.</p>
     ${btn(active.title ? "Valider et actualiser mon annonce" : "Valider ma carte et créer l’annonce", "quick-validate", "primary", !hasPhotos ? "disabled" : "")}
     <p class="muted">En validant, vous confirmez le nom, le numéro, l’état et les défauts après avoir vérifié les deux faces.</p></section>`
         : ""
@@ -354,7 +353,7 @@ function listingView(compact = false) {
       "La carte a été modifiée : régénérez et relisez le texte de l’annonce.",
     );
   const generationErrors = readyErrors(active);
-  return `<div class="panel"><div class="eyebrow">${compact ? "VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2>Votre annonce, prête à être relue.</h2><p>Préparez les informations, puis transférez-les sur Vinted. La publication automatique nécessite encore un accès autorisé.</p>${compact ? "" : `<div class="form-grid">${input("État à sélectionner sur Vinted", "vintedCondition", active.vintedCondition, "text", 'placeholder="Libellé disponible pour votre catégorie"')}${input("Protection et expédition réelles", "packaging", active.packaging, "text", 'placeholder="Ex. sleeve, protection rigide, enveloppe…"')}</div>`}<p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div><div class="transfer"><h3>Passer à la mise en vente</h3><p>1. Téléchargez le dossier contenant vos photos et l’annonce.<br>2. Ouvrez Vinted et transférez les informations.<br>3. Après publication, enregistrez le lien ci-dessous.</p><div class="actions">${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "primary", errors.length ? "disabled" : "")}<a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a></div></div>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
+  return `<div class="panel"><div class="eyebrow">${compact ? "VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2>Votre annonce, prête à être relue.</h2><p>Préparez les informations, puis transférez-les sur Vinted. La publication automatique nécessite encore un accès autorisé.</p><p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div><div class="transfer"><h3>Passer à la mise en vente</h3><p>1. Téléchargez le dossier contenant vos photos et l’annonce.<br>2. Ouvrez Vinted et transférez les informations.<br>3. Après publication, enregistrez le lien ci-dessous.</p><div class="actions">${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "primary", errors.length ? "disabled" : "")}<a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a></div></div>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
     active.history
       .slice()
       .reverse()
@@ -475,15 +474,6 @@ app.addEventListener("click", async (event) => {
     }
     if (action === "new") {
       active = newCard();
-      try {
-        const defaults = JSON.parse(
-          localStorage.getItem("listing-defaults") || "{}",
-        );
-        active.packaging = defaults.packaging || "";
-        active.vintedCondition = defaults.vintedCondition || "";
-      } catch {
-        /* Ignore invalid saved preferences. */
-      }
       quickMode = true;
       quickMessage = "";
       cards.unshift(active);
@@ -557,13 +547,6 @@ app.addEventListener("click", async (event) => {
       Object.assign(active, generateListing(active));
       active.listingFingerprint = listingFingerprint(active);
       active.status = "Prête";
-      localStorage.setItem(
-        "listing-defaults",
-        JSON.stringify({
-          packaging: active.packaging,
-          vintedCondition: active.vintedCondition,
-        }),
-      );
       log("Carte vérifiée et annonce générée en mode rapide");
       await persist();
       render();
@@ -762,7 +745,7 @@ app.addEventListener("click", async (event) => {
         const zip = new JSZip();
         zip.file(
           "annonce.txt",
-          `${active.title}\n\n${active.description}\n\nPrix : ${money(+active.price)}\nÉtat Vinted : ${active.vintedCondition}\nPublication manuelle : vérifiez catégorie, attributs et colis sur Vinted.`,
+          `${active.title}\n\n${active.description}\n\nPrix : ${money(+active.price)}\nPublication manuelle : vérifiez catégorie, attributs et colis sur Vinted.`,
         );
         active.photos.forEach((p, i) =>
           zip.file(
@@ -916,15 +899,7 @@ app.addEventListener("change", (event) =>
         active.conditionConfirmed = false;
         invalidateListing();
       }
-      if (
-        [
-          "price",
-          "packaging",
-          "vintedCondition",
-          "identityConfirmed",
-          "conditionConfirmed",
-        ].includes(f)
-      )
+      if (["price", "identityConfirmed", "conditionConfirmed"].includes(f))
         invalidateListing();
       if (
         f === "identityConfirmed" &&
@@ -944,8 +919,6 @@ app.addEventListener("change", (event) =>
           "condition",
           "identityConfirmed",
           "conditionConfirmed",
-          "packaging",
-          "vintedCondition",
         ].includes(f)
       )
         render();
@@ -1012,8 +985,6 @@ function validateBackup(data) {
       "variant",
       "condition",
       "defectNotes",
-      "packaging",
-      "vintedCondition",
       "title",
       "description",
       "listingUrl",
@@ -1086,7 +1057,7 @@ function validateBackup(data) {
   });
 }
 try {
-  cards = await listCards();
+  cards = (await listCards()).map(migrateCard);
   cards.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   render();
 } catch {

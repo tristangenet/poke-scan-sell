@@ -71,18 +71,15 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
     .click();
   await expect(page.locator('[data-field="price"]')).toHaveValue("12");
   await page.getByRole("button", { name: "5 Annonce" }).click();
-  await page.locator('[data-field="vintedCondition"]').fill("Très bon état");
-  await page.locator('[data-field="vintedCondition"]').blur();
-  await page
-    .locator('[data-field="packaging"]')
-    .fill("Sleeve et protection rigide");
-  await page.locator('[data-field="packaging"]').blur();
+  await expect(
+    page.locator('[data-field="vintedCondition"], [data-field="packaging"]'),
+  ).toHaveCount(0);
   await page
     .getByRole("button", { name: "Générer l’annonce", exact: true })
     .click();
   await expect(page.locator('[data-field="title"]')).toHaveValue(/Dracaufeu/);
   await expect(page.locator('[data-field="description"]')).toHaveValue(
-    /Sleeve et protection rigide/,
+    /Excellent/,
   );
   await page
     .locator('[data-field="description"]')
@@ -98,9 +95,9 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
   for await (const c of stream) chunks.push(c);
   const files = await JSZip.loadAsync(Buffer.concat(chunks));
   expect(Object.keys(files.files)).toHaveLength(3);
-  expect(await files.file("annonce.txt").async("text")).toContain(
-    "Description personnalisée conservée.",
-  );
+  const listingText = await files.file("annonce.txt").async("text");
+  expect(listingText).toContain("Description personnalisée conservée.");
+  expect(listingText).not.toMatch(/État Vinted|Protection et expédition/);
   await page
     .locator('[data-field="listingUrl"]')
     .fill("https://www.vinted.fr/items/123-test");

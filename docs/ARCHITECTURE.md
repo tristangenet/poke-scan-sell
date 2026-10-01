@@ -1,4 +1,4 @@
-# Architecture — version 0.2.4
+# Architecture — version 0.2.5
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -22,7 +22,7 @@ Chaque exemplaire possède un UUID, des photos originales, des attributs confirm
 
 Une observation contient sa source, date, montant EUR hors frais, type, référence/variante/langue, état et confirmation du vendeur. L'estimation exclut les données incompatibles, vieilles de plus de 90 jours, dupliquées et les agrégats. Elle calcule une fourchette interquartile sur au moins trois observations d'un même marché et type. Les ventes vérifiées sont privilégiées si leur échantillon est suffisant. Pas de pondération temporelle fine dans cette version.
 
-Une empreinte des faits de la carte évite le téléchargement et la confirmation de publication d'un brouillon périmé après modification du prix, de l'état, des photos ou de la référence. Le texte corrigé par le vendeur ne change pas cette empreinte. La régénération demande accord avant d'écraser les corrections.
+Une empreinte des faits de la carte évite le téléchargement et la confirmation de publication d'un brouillon périmé après modification du prix, de l'état, des photos ou de la référence. Le texte corrigé par le vendeur ne change pas cette empreinte. La régénération demande accord avant d'écraser les corrections. Le formulaire utilise uniquement l’état de la carte ; l’état Vinted et l’emballage ont été retirés. Au chargement, les anciennes empreintes sont adaptées sans réinitialiser les brouillons périmés ni modifier les textes corrigés.
 
 ## Sources externes
 

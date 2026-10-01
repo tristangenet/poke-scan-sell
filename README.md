@@ -4,7 +4,7 @@ Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, v
 
 ![Vue d’ensemble de l’application](docs/screenshots/desktop.png)
 
-## Version 0.2.4 — mode rapide
+## Version 0.2.5 — mode rapide
 
 Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
 
@@ -14,7 +14,7 @@ Le scan local analyse une copie agrandie du recto, privilégie le titre principa
 
 La reconnaissance n’est plus limitée à 24 références. Le nom et le numéro lus sont conservés même si une fiche manque. Les extensions sont consultées pour cibler la référence avant de charger la fiche détaillée. Les erreurs temporaires sont réessayées automatiquement ; les données sont mises en cache cinq minutes et les requêtes de secours limitées à trois simultanément. Si l’identité est établie par les données de carte et d’extension, une fiche détaillée indisponible ne bloque pas son remplissage ; le prix absent reste à choisir, les variantes restent facultatives.
 
-La tendance Cardmarket peut être choisie comme point de départ en un clic lorsqu’une référence catalogue unique est identifiée, sans saisir trois comparables. Sans référence unique, aucun prix catalogue n’est sélectionné automatiquement ; le vendeur peut choisir son prix et préparer l’annonce sans édition. Elle reste un agrégat général, pas un prix de vente garanti ni une estimation selon état. L’état peut être proposé par l’IA configurée. Une seule validation confirme identité et état puis génère le texte. L’emballage et le libellé Vinted sont mémorisés après cette validation pour les prochaines cartes. Les options avancées conservent le parcours détaillé et les comparables.
+La tendance Cardmarket peut être choisie comme point de départ en un clic lorsqu’une référence catalogue unique est identifiée, sans saisir trois comparables. Sans référence unique, aucun prix catalogue n’est sélectionné automatiquement ; le vendeur peut choisir son prix et préparer l’annonce sans édition. Elle reste un agrégat général, pas un prix de vente garanti ni une estimation selon état. L’état peut être proposé par l’IA configurée. Une seule validation confirme identité et état puis génère le texte. Le seul champ d’état est « État de la carte », utilisé pour l’estimation et la description. Le formulaire, la validation et l’export ne demandent plus de libellé d’état Vinted ni d’emballage. Les options avancées conservent le parcours détaillé et les comparables.
 
 Fonctionnalités livrées :
 
