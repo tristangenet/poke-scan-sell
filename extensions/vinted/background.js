@@ -184,6 +184,26 @@ export async function handleVinted(message, sender) {
     return { ok: true, data: record.files[message.index] };
   }
   if (
+    message.type === "photos-submitted" &&
+    message.id === record.id &&
+    isCreatePage(sender.url)
+  ) {
+    record.result = {
+      fields: record.result?.fields || [],
+      missing: record.result?.missing || [
+        "title",
+        "description",
+        "price",
+        "category",
+        "condition",
+        "parcel",
+      ],
+      photosSubmitted: true,
+    };
+    await put(record);
+    return { ok: true };
+  }
+  if (
     message.type === "report" &&
     message.id === record.id &&
     isCreatePage(sender.url)

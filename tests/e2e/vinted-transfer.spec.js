@@ -69,7 +69,7 @@ async function companion(page, context, requireLogin = false) {
     window.chrome.runtime = {
       id,
       getURL: (name) => `http://127.0.0.1:5173/extensions/vinted/${name}`,
-      getManifest: () => ({ version: "0.2.6" }),
+      getManifest: () => ({ version: "0.2.7" }),
       onMessageExternal: { addListener() {} },
       onMessage: { addListener() {} },
       sendMessage: (_id, message, reply) => {

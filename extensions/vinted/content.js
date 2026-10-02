@@ -8,6 +8,19 @@
   const createPage = () => /^\/items\/new\/?$/.test(location.pathname);
   const visible = (el) => el && el.getClientRects().length > 0 && !el.disabled;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const version = "0.2.7";
+  const core = ["title", "description", "price"];
+  const names = {
+    title: "titre",
+    description: "description",
+    price: "prix",
+    photos: "photos",
+    category: "catégorie",
+    condition: "état",
+    parcel: "format du colis",
+  };
+  const controls =
+    'input, textarea, select, [contenteditable="true"][role="textbox"], [role="combobox"], button[type="button"], button[aria-haspopup], [role="button"]';
   let running = false,
     completed = false,
     panel,
@@ -26,78 +39,200 @@
       "decris ton article",
       "describe your item",
     ].map(normalize),
-    price: ["prix", "prixeur", "price", "priceeur"],
+    price: ["prix", "prixeur", "price", "priceeur", "montant"],
     category: ["categorie", "category"],
     condition: ["etat", "condition"],
   };
-  function request(message) {
+  const log = (stage, details = {}) =>
+    console.info("[poke-scan-sell:vinted]", { version, stage, ...details });
+  function request(message, timeout = 15000) {
+    log("message:start", { type: message.type, index: message.index });
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (response) => {
-        if (chrome.runtime.lastError || !response?.ok)
-          reject(
-            new Error(
-              response?.error ||
-                "L’extension ne répond plus. Relancez le transfert depuis Poke Scan Sell.",
-            ),
-          );
+      let settled = false;
+      const finish = (error, response) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        log(error ? "message:failed" : "message:done", { type: message.type });
+        if (error) reject(error);
         else resolve(response);
-      });
+      };
+      const timer = setTimeout(
+        () =>
+          finish(
+            new Error(
+              "L’extension ne répond plus. Rechargez-la dans chrome://extensions ou edge://extensions, puis relancez le transfert depuis l’application.",
+            ),
+          ),
+        timeout,
+      );
+      try {
+        chrome.runtime.sendMessage(message, (response) => {
+          const error = chrome.runtime.lastError || !response?.ok;
+          finish(
+            error
+              ? new Error(
+                  response?.error ||
+                    "L’extension a été rechargée ou déconnectée. Relancez le transfert depuis l’application.",
+                )
+              : null,
+            response,
+          );
+        });
+      } catch (e) {
+        finish(e);
+      }
     });
   }
-  function field(name) {
-    const candidates = [
-      ...document.querySelectorAll(
-        "input, textarea, select, [role=combobox], button[aria-haspopup]",
-      ),
-    ];
-    const editable = (el) =>
+  function editable(el, name) {
+    return (
       visible(el) &&
+      !el.closest('header, nav, [role="search"]') &&
+      el.getAttribute("aria-disabled") !== "true" &&
       (name === "category" ||
         name === "condition" ||
-        (["INPUT", "TEXTAREA"].includes(el.tagName) && !el.readOnly)) &&
-      !["hidden", "file", "password", "checkbox", "radio", "submit"].includes(
-        el.type,
+        ((["INPUT", "TEXTAREA"].includes(el.tagName) || el.isContentEditable) &&
+          !el.readOnly)) &&
+      ![
+        "hidden",
+        "file",
+        "password",
+        "checkbox",
+        "radio",
+        "submit",
+        "search",
+        "email",
+        "tel",
+      ].includes(el.type)
+    );
+  }
+  function identifier(text, name) {
+    const key = normalize(text);
+    return aliases[name].some((alias) => {
+      const base = normalize(alias).replace(/^item/, "");
+      return new RegExp(
+        `^(?:input|textarea)?(?:itemupload|item|upload|listing|sell)?${base}(?:input|field|textarea|textbox|dropdown|select)?$`,
+      ).test(key);
+    });
+  }
+  function labelMatches(text, name) {
+    const key = normalize(text);
+    return labels[name].some(
+      (label) =>
+        key === label ||
+        (label.length >= 4 &&
+          key.startsWith(label) &&
+          key.length <= label.length + 80),
+    );
+  }
+  function score(el, name) {
+    if (!editable(el, name)) return 0;
+    let rank = [el.id, el.name, el.getAttribute("data-testid")].some((text) =>
+      identifier(text, name),
+    )
+      ? 100
+      : 0;
+    const associated = [
+      el.getAttribute("aria-label"),
+      ...[...(el.labels || [])].map((label) => label.textContent),
+      ...(el.getAttribute("aria-labelledby") || "")
+        .split(/\s+/)
+        .map((id) => document.getElementById(id)?.textContent),
+    ];
+    if (associated.some((text) => labelMatches(text, name))) rank += 90;
+    // Vinted can put its test id or label on a wrapper rather than the input.
+    // Only a wrapper with a single eligible control can identify that control.
+    for (
+      let parent = el.parentElement, depth = 0;
+      parent && depth < 4;
+      parent = parent.parentElement, depth++
+    ) {
+      const siblings = [...parent.querySelectorAll(controls)].filter((c) =>
+        editable(c, name),
       );
-    const direct = candidates.filter(
-      (el) =>
-        editable(el) &&
-        aliases[name].some(
-          (key) =>
-            el.id === key ||
-            el.name === key ||
-            el.getAttribute("data-testid") === `${key}--input`,
-        ),
-    );
-    if (direct.length === 1) return direct[0];
-    const semantic = candidates.filter(
-      (el) =>
-        editable(el) &&
-        labels[name].includes(
-          normalize(
-            [
-              el.getAttribute("aria-label"),
-              ...[...(el.labels || [])].map((label) => label.textContent),
-              el
-                .getAttribute("aria-labelledby")
-                ?.split(/\s+/)
-                .map((id) => document.getElementById(id)?.textContent)
-                .join(" "),
-            ].find((text) => text?.trim()) || "",
-          ),
-        ),
-    );
-    return semantic.length === 1 ? semantic[0] : null;
+      if (siblings.length !== 1) break;
+      if (identifier(parent.getAttribute("data-testid"), name))
+        rank = Math.max(rank, 80);
+      if (
+        [...parent.querySelectorAll("label, legend")].some((label) =>
+          labelMatches(label.textContent, name),
+        )
+      )
+        rank = Math.max(rank, 70);
+    }
+    if (labelMatches(el.getAttribute("placeholder"), name))
+      rank = Math.max(rank, 40);
+    if (
+      name === "price" &&
+      (el.inputMode === "decimal" || el.type === "number") &&
+      /^\s*0[.,]00\s*(?:€|EUR)?\s*$/i.test(el.getAttribute("placeholder") || "")
+    )
+      rank = Math.max(rank, 35);
+    return rank;
+  }
+  function field(name) {
+    const ranked = [...document.querySelectorAll(controls)]
+      .map((el) => {
+        const rank = score(el, name);
+        const other = Object.keys(aliases).some(
+          (key) => key !== name && score(el, key) >= rank,
+        );
+        return { el, rank: other ? 0 : rank };
+      })
+      .filter((entry) => entry.rank > 0)
+      .sort((a, b) => b.rank - a.rank);
+    return ranked.length && ranked[0].rank !== ranked[1]?.rank
+      ? ranked[0].el
+      : null;
+  }
+  const valueOf = (el) =>
+    String(el.isContentEditable ? el.textContent : el.value || "");
+  function diagnostic(stage) {
+    const attribute = (el, key) => {
+      const value = el.getAttribute(key) || "";
+      return /^[a-zA-Z_][a-zA-Z0-9_:\[\].-]{0,99}$/.test(value) ? value : "";
+    };
+    return {
+      version,
+      stage,
+      page: createPage() ? "/items/new" : "connexion ou autre page",
+      found: Object.fromEntries(
+        Object.keys(aliases).map((name) => [name, !!field(name)]),
+      ),
+      photoInput: !!photoInput(),
+      controls: [...document.querySelectorAll(controls)]
+        .filter((el) => core.some((name) => editable(el, name)))
+        .slice(0, 30)
+        .map((el) => ({
+          tag: el.tagName,
+          type: el.type || el.getAttribute("role") || "",
+          id: attribute(el, "id"),
+          name: attribute(el, "name"),
+          testId: attribute(el, "data-testid"),
+        })),
+    };
   }
   function setValue(el, value) {
-    const prototype =
-      el.tagName === "TEXTAREA"
-        ? HTMLTextAreaElement.prototype
-        : el.tagName === "SELECT"
-          ? HTMLSelectElement.prototype
-          : HTMLInputElement.prototype;
-    Object.getOwnPropertyDescriptor(prototype, "value").set.call(el, value);
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.focus({ preventScroll: true });
+    if (el.isContentEditable) el.textContent = value;
+    else {
+      const prototype =
+        el.tagName === "TEXTAREA"
+          ? HTMLTextAreaElement.prototype
+          : el.tagName === "SELECT"
+            ? HTMLSelectElement.prototype
+            : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(prototype, "value").set.call(el, value);
+    }
+    el.dispatchEvent(
+      new InputEvent("input", {
+        bubbles: true,
+        inputType: "insertText",
+        data: String(value),
+      }),
+    );
     el.dispatchEvent(new Event("change", { bubbles: true }));
+    el.blur();
   }
   function ensurePanel() {
     if (panel) return panel;
@@ -120,7 +255,7 @@
       host.hidden = true;
     });
     const title = document.createElement("strong");
-    title.textContent = "Poke Scan Sell → Vinted";
+    title.textContent = `Poke Scan Sell → Vinted · v${version}`;
     const text = document.createElement("p");
     text.setAttribute("role", "status");
     const retry = document.createElement("button");
@@ -131,39 +266,70 @@
       completed = false;
       start();
     });
-    box.append(close, title, text, retry);
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.textContent = "Copier le diagnostic";
+    copy.style.cssText = "display:none;margin-top:8px";
+    const details = document.createElement("textarea");
+    details.readOnly = true;
+    details.hidden = true;
+    details.setAttribute(
+      "aria-label",
+      "Diagnostic technique sans contenu de l’annonce",
+    );
+    details.style.cssText =
+      "width:100%;height:100px;margin-top:8px;box-sizing:border-box";
+    copy.addEventListener("click", async () => {
+      const report = JSON.stringify(diagnostic("diagnostic"), null, 2);
+      try {
+        await navigator.clipboard.writeText(report);
+        copy.textContent = "Diagnostic copié";
+      } catch {
+        details.value = report;
+        details.hidden = false;
+        details.select();
+      }
+    });
+    box.append(close, title, text, retry, copy, details);
     root.append(style, box);
     document.documentElement.append(host);
-    panel = { host, text, retry };
+    panel = { host, text, retry, copy };
     return panel;
   }
   function show(text, retry = false) {
     const p = ensurePanel();
     p.host.hidden = false;
-    p.text.textContent = text;
+    if (p.text.textContent !== text) p.text.textContent = text;
     p.retry.style.display = retry ? "inline-block" : "none";
+    p.copy.style.display = retry ? "inline-block" : "none";
   }
   function waitFor(check, timeout = 18000) {
-    const current = check();
-    if (current) return Promise.resolve(current);
-    return new Promise((resolve) => {
-      const observer = new MutationObserver(() => {
-        const value = check();
-        if (value) {
-          clearTimeout(timer);
-          observer.disconnect();
-          resolve(value);
-        }
-      });
-      const timer = setTimeout(() => {
+    return new Promise((resolve, reject) => {
+      const finish = (value, error) => {
+        clearTimeout(timer);
+        clearInterval(poll);
         observer.disconnect();
-        resolve(null);
-      }, timeout);
+        if (error) reject(error);
+        else resolve(value);
+      };
+      const inspect = () => {
+        try {
+          const value = check();
+          if (value) finish(value);
+        } catch (e) {
+          finish(null, e);
+        }
+      };
+      const observer = new MutationObserver(inspect);
+      const timer = setTimeout(() => finish(null), timeout);
+      // Some form state (readOnly/disabled/layout) changes without child mutations.
+      const poll = setInterval(inspect, 250);
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
         attributes: true,
       });
+      inspect();
     });
   }
   const numeric = (value) =>
@@ -175,8 +341,8 @@
     );
   function same(el, name, draft) {
     return name === "price"
-      ? numeric(el.value) === draft.price
-      : el.value.trim() === draft[name];
+      ? numeric(valueOf(el)) === draft.price
+      : valueOf(el).trim() === draft[name];
   }
   function photoInput() {
     const inputs = [...document.querySelectorAll('input[type="file"]')].filter(
@@ -272,6 +438,7 @@
     const input = photoInput();
     if (!input || (!input.multiple && photos.length > 1)) return false;
     const transfer = new DataTransfer();
+    log("photos:start", { count: photos.length });
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
       const allowed = input.accept.toLowerCase();
@@ -289,7 +456,11 @@
         !(ext === "jpg" && allowed.includes(".jpeg"))
       )
         return false;
-      const response = await request({ type: "read-photo", id, index: i });
+      show(`Transfert de la photo ${i + 1} sur ${photos.length}…`);
+      const response = await request(
+        { type: "read-photo", id, index: i },
+        30000,
+      );
       const encoded = response.data.split(",")[1];
       const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
       transfer.items.add(
@@ -301,12 +472,16 @@
     input.files = transfer.files;
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
+    log("photos:submitted", { count: photos.length });
     return true;
   }
   async function start() {
     if (running || completed) return;
     running = true;
+    const attemptURL = location.href;
+    let transfer;
     try {
+      log("transfer:start");
       const response = await request({ type: "read-draft" });
       if (response.waitingForLogin) {
         show(
@@ -324,15 +499,26 @@
       }
       if (!createPage()) return;
       const { id, draft, previous } = response;
-      show("Chargement du formulaire et remplissage de votre annonce…");
+      transfer = {
+        id,
+        fields: [],
+        photosSubmitted: previous?.photosSubmitted === true,
+      };
+      show("Recherche des champs du formulaire Vinted…");
+      log("form:waiting", diagnostic("waiting"));
+      // Do not gate every field and the photo upload on finding all three inputs.
+      // Photos can unlock inputs, and React can mount individual sections later.
       const form = await waitFor(
-        () => field("title") && field("description") && field("price"),
+        () => !createPage() || core.some((name) => field(name)) || photoInput(),
+        20000,
       );
+      if (!createPage()) return;
       if (!form) {
         show(
-          "Le formulaire n’est pas encore disponible. Ouvrez la page de création de Vinted, puis reprenez le remplissage.",
+          "Aucun champ ni sélecteur de photos n’a été reconnu après 20 secondes. Vérifiez que la page « Vends ton article » est ouverte, puis reprenez le remplissage. Le diagnostic permet d’adapter les repères du formulaire.",
           true,
         );
+        log("form:not-found", diagnostic("not-found"));
         await request({
           type: "report",
           id,
@@ -343,72 +529,124 @@
         completed = true;
         return;
       }
-      const conflict = ["title", "description", "price"].some(
-        (name) =>
-          field(name).value.trim() &&
-          !(name === "price" && numeric(field(name).value) === 0) &&
-          !same(field(name), name, draft),
-      );
-      if (conflict || (hasExistingPhotos() && !previous?.photosSubmitted)) {
-        show(
-          "Un autre brouillon est présent sur Vinted. Videz ses champs et ses photos, puis reprenez le remplissage de cette carte.",
-          true,
-        );
-        await request({
-          type: "report",
-          id,
-          status: "blocked",
-          fields: [],
-          missing: ["title", "description", "price", "photos"],
-          photosSubmitted: previous?.photosSubmitted === true,
-        });
-        completed = true;
-        return;
-      }
-      const filled = [],
-        missing = [];
-      for (const name of ["title", "description", "price"]) {
-        const input = field(name);
-        const value =
-          name === "price"
-            ? draft.price
-                .toFixed(2)
-                .replace(".", input.type === "number" ? "." : ",")
-            : draft[name];
-        if (input.maxLength > 0 && value.length > input.maxLength) {
-          missing.push(name);
-          continue;
-        }
-        setValue(input, value);
-        await delay(120);
-        if (field(name) && same(field(name), name, draft)) filled.push(name);
-        else missing.push(name);
-      }
-      if (
-        await choose(
-          "category",
-          ["Cartes Pokémon", "Cartes à collectionner", "Trading cards"],
-          [
-            ["Loisirs et collections", "Entertainment"],
-            ["Collections", "Collection", "Jeux", "Collectibles"],
-          ],
-        )
-      )
-        filled.push("category");
-      else missing.push("category");
       const states = ["M", "NM", "EX"].includes(draft.condition)
         ? ["Très bon état", "Very good"]
         : draft.condition === "GD"
           ? ["Bon état", "Good"]
           : ["Satisfaisant", "État correct", "Satisfactory"];
-      if (draft.condition && (await choose("condition", states)))
-        filled.push("condition");
-      else missing.push("condition");
-      let photosSubmitted = previous?.photosSubmitted === true;
-      if (!photosSubmitted) {
-        show("Transfert des photos originales…");
-        photosSubmitted = await sendPhotos(id, draft.photos);
+      let photosAttempted = transfer.photosSubmitted;
+      const chosen = new Set(),
+        attempted = new Set(),
+        writes = new Map();
+      const deadline = Date.now() + 20000;
+      while (Date.now() < deadline) {
+        if (!createPage()) return;
+        const conflict = core.some((name) => {
+          const input = field(name);
+          return (
+            input &&
+            valueOf(input).trim() &&
+            !(name === "price" && numeric(valueOf(input)) === 0) &&
+            !same(input, name, draft)
+          );
+        });
+        if (conflict || (hasExistingPhotos() && !transfer.photosSubmitted)) {
+          show(
+            "Un autre brouillon est présent sur Vinted. Ses informations sont conservées. Videz ses champs et ses photos, puis reprenez le remplissage de cette carte.",
+            true,
+          );
+          await request({
+            type: "report",
+            id,
+            status: "blocked",
+            fields: transfer.fields,
+            missing: [...core, "photos"],
+            photosSubmitted: transfer.photosSubmitted,
+          });
+          log("form:conflict");
+          completed = true;
+          return;
+        }
+        for (const name of core) {
+          const input = field(name);
+          if (!input || same(input, name, draft)) continue;
+          const last = writes.get(name);
+          if (last?.el === input && last.count >= 3) continue;
+          const value =
+            name === "price"
+              ? draft.price
+                  .toFixed(2)
+                  .replace(".", input.type === "number" ? "." : ",")
+              : draft[name];
+          if (input.maxLength > 0 && value.length > input.maxLength) {
+            writes.set(name, { el: input, count: 3 });
+            continue;
+          }
+          show(`Remplissage : ${names[name]}…`);
+          setValue(input, value);
+          writes.set(name, {
+            el: input,
+            count: (last?.el === input ? last.count : 0) + 1,
+          });
+          await delay(120);
+          log("field:checked", {
+            field: name,
+            accepted: !!field(name) && same(field(name), name, draft),
+          });
+        }
+        transfer.fields = core.filter(
+          (name) => field(name) && same(field(name), name, draft),
+        );
+        if (!photosAttempted && photoInput()) {
+          photosAttempted = true;
+          transfer.photosSubmitted = await sendPhotos(id, draft.photos);
+          // Keep this checkpoint across reloads and retries even if a later field fails.
+          if (transfer.photosSubmitted)
+            await request({ type: "photos-submitted", id });
+        }
+        if (!attempted.has("category") && field("category")) {
+          attempted.add("category");
+          show("Sélection de la catégorie de cartes…");
+          log("category:start");
+          if (
+            await choose(
+              "category",
+              ["Cartes Pokémon", "Cartes à collectionner", "Trading cards"],
+              [
+                ["Loisirs et collections", "Entertainment"],
+                ["Collections", "Collection", "Jeux", "Collectibles"],
+              ],
+            )
+          )
+            chosen.add("category");
+          log("category:done", { selected: chosen.has("category") });
+        }
+        if (!attempted.has("condition") && field("condition")) {
+          attempted.add("condition");
+          log("condition:start");
+          if (draft.condition && (await choose("condition", states)))
+            chosen.add("condition");
+          log("condition:done", { selected: chosen.has("condition") });
+        }
+        // Recheck values after photos/category events: Vinted can rerender inputs.
+        transfer.fields = core.filter(
+          (name) => field(name) && same(field(name), name, draft),
+        );
+        const pending = core.filter((name) => !transfer.fields.includes(name));
+        const rejected = pending.every((name) => writes.get(name)?.count >= 3);
+        if ((!pending.length || rejected) && photosAttempted) break;
+        const waiting = [...pending, ...(!photosAttempted ? ["photos"] : [])];
+        show(
+          `${transfer.fields.length ? `Champs remplis : ${transfer.fields.map((name) => names[name]).join(", ")}.\n` : ""}Attente du formulaire : ${waiting.map((name) => names[name]).join(", ")}…`,
+        );
+        await delay(250);
       }
+      if (!createPage()) return;
+      const filled = [...transfer.fields, ...chosen];
+      const missing = [...core, "category", "condition"].filter(
+        (name) => !filled.includes(name),
+      );
+      const photosSubmitted = transfer.photosSubmitted;
       if (!photosSubmitted) missing.push("photos");
       missing.push("parcel");
       const coreComplete =
@@ -423,29 +661,52 @@
         missing,
         photosSubmitted,
       });
-      const names = {
-        title: "titre",
-        description: "description",
-        price: "prix",
-        photos: "photos",
-        category: "catégorie",
-        condition: "état",
-        parcel: "format du colis",
-      };
+      log("transfer:done", {
+        status: coreComplete ? "filled" : "partial",
+        fields: filled,
+        missing,
+      });
+      if (!coreComplete) log("form:partial", diagnostic("partial"));
       show(
-        `${coreComplete ? "Titre, description et prix remplis. Photos transmises au formulaire." : "Transfert partiel : certains champs n’ont pas accepté les données."}\nÀ vérifier ou compléter : ${missing.map((name) => names[name]).join(", ")}.\nVérifiez le résultat des photos et cliquez sur Publier quand votre annonce est prête.`,
+        `${coreComplete ? "Titre, description et prix remplis. Photos transmises au formulaire." : "Transfert partiel : les champs disponibles ont été remplis. Un champ absent, ambigu ou refusé est signalé ci-dessous."}\nÀ vérifier ou compléter : ${missing.map((name) => names[name]).join(", ")}.\nVérifiez le résultat des photos et cliquez sur Publier quand votre annonce est prête.`,
         !coreComplete,
       );
       completed = true;
     } catch (e) {
+      log("transfer:failed", diagnostic("failed"));
       show(
         e.message ||
           "Le remplissage a été interrompu. Relancez le transfert depuis l’application.",
         true,
       );
+      if (transfer && createPage())
+        await request(
+          {
+            type: "report",
+            id: transfer.id,
+            status:
+              transfer.fields.length || transfer.photosSubmitted
+                ? "partial"
+                : "blocked",
+            fields: transfer.fields,
+            photosSubmitted: transfer.photosSubmitted,
+            missing: [
+              ...core.filter((name) => !transfer.fields.includes(name)),
+              ...(!transfer.photosSubmitted ? ["photos"] : []),
+              "category",
+              "condition",
+              "parcel",
+            ],
+          },
+          5000,
+        ).catch(() => {});
       completed = true;
     } finally {
       running = false;
+      if (attemptURL !== location.href) {
+        completed = false;
+        start();
+      }
     }
   }
   new MutationObserver(() => {

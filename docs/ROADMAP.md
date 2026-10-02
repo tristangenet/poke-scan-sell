@@ -1,6 +1,6 @@
 # Feuille de route
 
-## Version 0.2.6 livrée
+## Version 0.2.7 livrée
 
 Le code de l'application est disponible : capture, OCR local, catalogue TCGdex, inventaire local, état guidé, analyse IA optionnelle, comparables manuels, estimation, annonce modifiable, export ZIP/JSON et restauration.
 
@@ -16,7 +16,7 @@ Les tâches restent ouvertes lorsque tous les critères du cahier des charges ne
 | [#6 Estimation](https://github.com/tristangenet/poke-scan-sell/issues/6)              | Comparables manuels traçables et calcul testé ; collecte automatique par état non disponible                                   |
 | [#7 Annonces](https://github.com/tristangenet/poke-scan-sell/issues/7)                | Textes, modifications, ZIP et compagnon de remplissage Vinted ; validation sur le compte réel à effectuer                      |
 | [#8 Publication Vinted](https://github.com/tristangenet/poke-scan-sell/issues/8)      | Compagnon de remplissage développé ; formulaire réel et chargement Chrome à valider ; clic Publier manuel                      |
-| [#9 Recette](https://github.com/tristangenet/poke-scan-sell/issues/9)                 | 37 tests unitaires/serveur et 21 parcours navigateur réussis ; corpus réel et plateformes à valider                            |
+| [#9 Recette](https://github.com/tristangenet/poke-scan-sell/issues/9)                 | 37 tests unitaires/serveur et 26 parcours navigateur réussis ; corpus réel et plateformes à valider                            |
 
 ## Prochaines étapes
 

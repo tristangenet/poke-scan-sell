@@ -1,12 +1,12 @@
-# Validation — version 0.2.6
+# Validation — version 0.2.7
 
-Vérifications effectuées le 1 octobre 2026.
+Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Les vérifications externes précédentes conservent leurs dates ci-dessous.
 
 | Vérification                               | Résultat                                                   |
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
 | Tests unitaires et serveur Node            | 37 réussis                                                 |
-| Parcours navigateur Chromium               | 21 réussis                                                 |
+| Parcours navigateur Chromium               | 26 réussis                                                 |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
@@ -14,6 +14,12 @@ Vérifications effectuées le 1 octobre 2026.
 | Publication réelle sur Vinted              | Non exécutée ; mode manuel assisté uniquement              |
 
 ## Transfert Vinted
+
+Régression 0.2.7 : comparaison des scripts 0.2.6 et 0.2.7 sur un même formulaire dont les champs sont désactivés jusqu’à l’ajout de photos. Après 1,2 seconde, 0.2.6 reste en chargement, titre vide et aucune photo ; 0.2.7 a rempli le titre, la description et le prix, soumis deux photos et reçu un résultat `filled`. Ce formulaire est contrôlé ; le blocage exact du formulaire utilisateur n’a pas été observé.
+
+Cinq parcours ajoutés : libellé de conteneur avec texte complémentaire malgré une aria-label générique, nom `item[description]` et identifiant sur conteneur du prix en conservant la recherche du site ; champs débloqués par les photos et prix monté plus tard ; prix ambigu laissant les autres champs et photos remplis avec résultat partiel, diagnostic sans valeurs et reprise sans doublon ; message de lecture photo sans réponse produisant une erreur après trente secondes ; extension 0.2.6 signalée comme ancienne, instructions de rechargement et aucun nouvel envoi de brouillon. Les douze parcours ciblés puis les vingt-six parcours de l’application passent. Le panneau Vinted v0.2.7 et les instructions de mise à jour de l’application ont été inspectés visuellement.
+
+Le CLI agent-browser s’arrête au démarrage de son daemon dans cet environnement ; les vérifications ont utilisé Playwright avec Chromium. La visite du 2 octobre à `/items/new` a redirigé vers la connexion Vinted. Aucun compte connecté ni annonce réelle n’a été utilisé. Le transfert réel du formulaire utilisateur reste donc à confirmer après mise à jour des fichiers de l’extension, rechargement du compagnon et des deux onglets.
 
 Sept nouveaux parcours navigateur : saisie du titre et de la description corrigée, prix décimal, catégorie et état par libellés, conservation octet par octet des deux photos, absence de clic Publier, protection d’un brouillon existant, champs non reconnus signalés, installation guidée sans extension, contenu et association du ZIP à l’origine exacte, transfert en un clic depuis une carte validée et blocage après modification du prix. La file IndexedDB réelle et les scripts réels sont aussi exercés de l’application jusqu’au formulaire de contrôle, avec API Chrome de messages/onglets simulées : connexion en attente puis reprise dans le même onglet, rejet d’une autre application, résultat retourné et suppression des originaux temporaires après transfert complet.
 

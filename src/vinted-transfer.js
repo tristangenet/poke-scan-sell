@@ -54,9 +54,24 @@ function request(message, timeout = 15000) {
 export async function checkVintedHelper() {
   try {
     const r = await request({ type: "ping" }, 1200);
-    return r.protocol === PROTOCOL;
+    const current = String(r.version || "")
+      .split(".")
+      .map(Number);
+    const expected = manifestTemplate.version.split(".").map(Number);
+    const valid = /^\d+\.\d+\.\d+$/.test(r.version || "");
+    const comparison = valid
+      ? current.reduce(
+          (difference, part, i) => difference || part - expected[i],
+          0,
+        )
+      : -1;
+    return {
+      connected: r.protocol === PROTOCOL,
+      ready: r.protocol === PROTOCOL && comparison >= 0,
+      version: valid ? r.version : "inconnue",
+    };
   } catch {
-    return false;
+    return { connected: false, ready: false, version: "" };
   }
 }
 export function makeVintedDraft(card) {
@@ -120,7 +135,7 @@ export async function downloadVintedExtension() {
     folder.file(name, source);
   folder.file(
     "INSTALLATION.txt",
-    "1. Décompressez ce dossier.\n2. Ouvrez chrome://extensions (ou edge://extensions).\n3. Activez le mode développeur.\n4. Cliquez sur Charger l’extension non empaquetée et sélectionnez poke-scan-sell-vinted.\n5. Rechargez Poke Scan Sell, puis cliquez sur Remplir mon annonce sur Vinted.\n\nL’extension est associée uniquement à : " +
+    `Version ${manifest.version}\n\nPremière installation :\n1. Décompressez ce dossier.\n2. Ouvrez chrome://extensions (ou edge://extensions).\n3. Activez le mode développeur.\n4. Cliquez sur Charger l’extension non empaquetée et sélectionnez poke-scan-sell-vinted.\n5. Rechargez Poke Scan Sell, puis cliquez sur Remplir mon annonce sur Vinted.\n\nMise à jour : remplacez les fichiers dans le dossier déjà chargé avec ceux de ce ZIP, puis cliquez sur Recharger (flèche circulaire) sur la fiche de l’extension. Rechargez aussi les onglets Poke Scan Sell et Vinted. Un simple git pull de l’application ne met pas à jour l’extension.\n\nL’extension est associée uniquement à : ` +
       origin +
       "\nLes photos sont conservées temporairement dans ce navigateur, puis retirées après transfert ou expiration. Aucune connexion Vinted n’est demandée dans Poke Scan Sell. Vérifiez les champs et les photos sur Vinted avant de publier.\n",
   );

@@ -14,12 +14,33 @@ async function controlForm(page, setup = () => {}) {
   await page.evaluate(
     ({ draft, data }) => {
       window.reports = [];
+      window.photoReads = 0;
+      const attach = Element.prototype.attachShadow;
+      Element.prototype.attachShadow = function (options) {
+        const root = attach.call(this, options);
+        if (this.id === "poke-scan-sell-helper") window.helperRoot = root;
+        return root;
+      };
       window.chrome = window.chrome || {};
       window.chrome.runtime = {
         sendMessage(message, reply) {
           if (message.type === "read-draft")
-            return reply({ ok: true, id: "test-transfer", draft });
-          if (message.type === "read-photo") return reply({ ok: true, data });
+            return reply({
+              ok: true,
+              id: "test-transfer",
+              draft,
+              previous: window.photosSubmitted
+                ? { photosSubmitted: true }
+                : null,
+            });
+          if (message.type === "read-photo") {
+            window.photoReads++;
+            return reply({ ok: true, data });
+          }
+          if (message.type === "photos-submitted") {
+            window.photosSubmitted = true;
+            return reply({ ok: true });
+          }
           if (message.type === "report") {
             window.reports.push(message);
             return reply({ ok: true });
@@ -145,7 +166,8 @@ test("application : un clic transmet texte et photos, puis une modification bloq
     window.chrome.runtime = {
       sendMessage(id, message, reply) {
         window.sent.push(message);
-        if (message.type === "ping") return reply({ ok: true, protocol: 1 });
+        if (message.type === "ping")
+          return reply({ ok: true, protocol: 1, version: "0.2.7" });
         if (message.type === "prepare")
           return reply({ ok: true, id: "transfer" });
         if (message.type === "status")
@@ -180,4 +202,195 @@ test("application : un clic transmet texte et photos, puis une modification bloq
   await expect(
     page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
   ).toBeDisabled();
+});
+
+test("Vinted : libellés de conteneur, noms entre crochets et prix avec placeholder, sans toucher la recherche", async ({
+  page,
+}) => {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await controlForm(page, () => {
+    for (const name of ["title", "description", "price"]) {
+      const input = document.getElementById(name);
+      const label = document.querySelector(`[for="${name}"]`);
+      const section = document.createElement("section");
+      label.removeAttribute("for");
+      input.id = `x-${name}`;
+      input.removeAttribute("name");
+      input.before(section);
+      section.append(label, input);
+      if (name === "title") {
+        input.setAttribute("aria-label", "Saisie");
+        label.textContent = "Titre de l’article * (100 caractères maximum)";
+      } else if (name === "description") {
+        label.textContent = "Informations";
+        input.name = "item[description]";
+      } else {
+        label.textContent = "Montant demandé";
+        input.placeholder = "0,00 €";
+        section.setAttribute("data-testid", "item-upload-price-field");
+      }
+    }
+    const header = document.createElement("header");
+    header.innerHTML =
+      '<input id="title" aria-label="Titre" value="Mes recherches"><input type="search" aria-label="Description">';
+    document.body.prepend(header);
+  });
+  await expect(page.locator("#x-title")).toHaveValue(draft.title);
+  await expect(page.locator("#x-description")).toHaveValue(draft.description);
+  await expect(
+    page.locator('[data-testid="item-upload-price-field"] input'),
+  ).toHaveValue("12,25");
+  await expect(page.locator("header #title")).toHaveValue("Mes recherches");
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("filled");
+  expect(errors).toEqual([]);
+});
+
+test("Vinted : les photos débloquent des champs désactivés et le prix apparaît plus tard", async ({
+  page,
+}) => {
+  await controlForm(page, () => {
+    for (const id of ["title", "description", "price"])
+      document.getElementById(id).disabled = true;
+    const price = document.getElementById("price");
+    price.remove();
+    document.getElementById("images").addEventListener("change", () => {
+      document.getElementById("title").disabled = false;
+      document.getElementById("description").disabled = false;
+      setTimeout(() => {
+        price.disabled = false;
+        document.querySelector("form").append(price);
+      }, 400);
+    });
+  });
+  await expect(page.locator("#photo-result")).toHaveText("2 photos reçues");
+  await expect(page.locator("#title")).toHaveValue(draft.title);
+  await expect(page.locator("#price")).toHaveValue("12,25");
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("filled");
+  expect(await page.evaluate(() => window.photoReads)).toBe(2);
+});
+
+test("Vinted : un prix ambigu laisse les autres champs remplis, diagnostic sans valeurs et reprise sans doublon", async ({
+  page,
+}) => {
+  test.setTimeout(40000);
+  await controlForm(page, () => {
+    const other = document.createElement("input");
+    other.id = "second-price";
+    other.name = "price";
+    other.setAttribute("aria-label", "Prix");
+    document.querySelector("form").append(other);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text) => {
+          window.diagnostic = text;
+        },
+      },
+    });
+  });
+  await expect(page.locator("#title")).toHaveValue(draft.title);
+  await expect(page.locator("#description")).toHaveValue(draft.description);
+  await expect(page.locator("#photo-result")).toHaveText("2 photos reçues");
+  await expect(page.locator("#price")).toHaveValue("");
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status), {
+      timeout: 25000,
+    })
+    .toBe("partial");
+  expect(await page.evaluate(() => window.reports.at(-1).missing)).toContain(
+    "price",
+  );
+  expect(
+    await page.evaluate(
+      () => window.helperRoot.querySelector('[role="status"]').textContent,
+    ),
+  ).toContain("prix");
+  await page.evaluate(() =>
+    [...window.helperRoot.querySelectorAll("button")]
+      .find((b) => b.textContent === "Copier le diagnostic")
+      .click(),
+  );
+  const diagnostic = await page.evaluate(() => window.diagnostic);
+  expect(JSON.parse(diagnostic).found.price).toBe(false);
+  expect(diagnostic).not.toContain(draft.title);
+  expect(diagnostic).not.toContain(draft.description);
+  expect(diagnostic).not.toContain(data);
+  await page.evaluate(() => {
+    document.getElementById("second-price").remove();
+    [...window.helperRoot.querySelectorAll("button")]
+      .find((b) => b.textContent === "Reprendre le remplissage")
+      .click();
+  });
+  await expect(page.locator("#price")).toHaveValue("12,25");
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("filled");
+  expect(await page.evaluate(() => window.photoReads)).toBe(2);
+  expect(await page.evaluate(() => window.published)).toBe(0);
+});
+
+test("Vinted : un message photo sans réponse finit en erreur explicite et conserve les champs remplis", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await controlForm(page, () => {
+    const send = chrome.runtime.sendMessage;
+    chrome.runtime.sendMessage = (message, reply) => {
+      if (message.type === "read-photo") {
+        window.waitingPhoto = true;
+        return;
+      }
+      send(message, reply);
+    };
+  });
+  await expect.poll(() => page.evaluate(() => window.waitingPhoto)).toBe(true);
+  await page.clock.fastForward(30100);
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("partial");
+  expect(
+    await page.evaluate(
+      () => window.helperRoot.querySelector('[role="status"]').textContent,
+    ),
+  ).toContain("ne répond plus");
+  await expect(page.locator("#title")).toHaveValue(draft.title);
+  expect(await page.evaluate(() => window.reports.at(-1).photosSubmitted)).toBe(
+    false,
+  );
+});
+
+test("application : un ancien compagnon demande la mise à jour et aucun transfert n’est envoyé", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.sent = [];
+    window.chrome = window.chrome || {};
+    window.chrome.runtime = {
+      sendMessage(id, message, reply) {
+        window.sent.push(message);
+        reply({ ok: true, protocol: 1, version: "0.2.6" });
+      },
+    };
+  });
+  await readyCard(page);
+  await expect(page.locator("#vinted-connection-status")).toContainText(
+    "mise à jour nécessaire",
+  );
+  await page
+    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
+    .click();
+  await expect(page.locator("#vinted-install")).toHaveAttribute("open", "");
+  await expect(page.locator("#vinted-install")).toContainText("Recharger");
+  expect(
+    await page.evaluate(() => window.sent.every((m) => m.type === "ping")),
+  ).toBe(true);
+  await page.screenshot({
+    path: "/tmp/poke-vinted-update.png",
+    fullPage: true,
+  });
 });

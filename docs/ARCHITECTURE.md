@@ -1,4 +1,4 @@
-# Architecture — version 0.2.6
+# Architecture — version 0.2.7
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -33,6 +33,8 @@ OCR : https://github.com/naptha/tesseract.js. Traitement dans le navigateur, ave
 IA optionnelle : https://developers.openai.com/api/docs/guides/images-vision et https://developers.openai.com/api/docs/guides/structured-outputs. Recto/verso envoyés seulement après accord utilisateur. La réponse contient identité lisible, état suggéré, défauts, confiance et besoin de meilleures photos. Aucune publication déclenchée par la réponse.
 
 Vinted : compagnon Manifest V3 dans `extensions/vinted`, téléchargé depuis l’application via `src/vinted-transfer.js`. L’origine de l’application est liée dans le ZIP et vérifiée sur chaque message externe. Une file IndexedDB reçoit les photos séparément pour rester sous la taille limite des messages Chrome. Le service worker ouvre un nouvel onglet et lie le transfert à son identifiant ; seules les pages Vinted de cet onglet reçoivent les données. Le script de contenu remplit les champs reconnus avec les événements du formulaire, transfère les originaux via File/DataTransfer, puis remonte un résultat. Catégorie et état sont sélectionnés uniquement par libellés reconnus. Les brouillons préexistants sont conservés ; un résultat précédent évite un nouvel envoi des photos lors d’une reprise. Les originaux temporaires sont retirés après transfert complet ou fermeture de l’onglet, et les transferts expirés sont purgés toutes les cinq minutes après leur délai de trente minutes. Aucun accès aux cookies, aucune API privée, collecte automatisée, session partagée ou clic de publication automatique. Le copier-coller et le ZIP restent des replis.
+
+Le remplissage Vinted progresse par champ, avec priorité aux identifiants et libellés associés, puis aux conteneurs portant un seul contrôle et aux placeholders reconnus. Les égalités de score et contrôles de recherche ne sont pas remplis. Les champs et photos sont recherchés pendant vingt secondes, indépendamment les uns des autres ; chaque message a un délai maximal. Le worker conserve un point de reprise dès l’envoi des photos au formulaire pour éviter un doublon si un champ échoue ensuite. Les journaux de progression et le diagnostic copiable ne contiennent pas le contenu de l’annonce ni les photos. L’application exige une version de compagnon au moins égale à celle qu’elle distribue, avec protocole compatible ; l’identifiant d’extension reste stable.
 
 ## Limites
 

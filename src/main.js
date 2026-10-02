@@ -43,7 +43,7 @@ let cards = [],
   busy = false,
   query = "",
   statusFilter = "all";
-let vintedHelper = false;
+let vintedHelper = { connected: false, ready: false, version: "" };
 const steps = ["Photos", "Identification", "État", "Estimation", "Annonce"];
 const icons = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
@@ -352,10 +352,17 @@ function priceView(e) {
   )}${input("Prix de mise en vente choisi (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}</div>${e.available ? btn(`Utiliser le prix conseillé : ${money(e.price)}`, "apply-price", "secondary") : ""}<p class="muted">Vous pouvez saisir votre propre prix. Les indicateurs ne garantissent pas une vente.</p></div>`;
 }
 function vintedInstallationView() {
-  return `<details id="vinted-install"><summary>Activer le remplissage Vinted (une seule fois)</summary><p>Sur cet ordinateur, installez le compagnon dans Chrome ou Edge.</p><ol><li>${btn("Télécharger l’extension Chrome / Edge", "vinted-extension-download", "secondary")} puis décompressez le ZIP.</li><li>Ouvrez <strong>chrome://extensions</strong> (ou <strong>edge://extensions</strong>) et activez le mode développeur.</li><li>Cliquez sur « Charger l’extension non empaquetée » et sélectionnez le dossier <strong>poke-scan-sell-vinted</strong>.</li><li>Rechargez cette application. Le bouton « Remplir mon annonce sur Vinted » enverra ensuite les informations et les photos.</li></ol><p class="muted">Le compagnon téléchargé est associé à l’adresse de cette application. Les photos transitent dans ce navigateur avant leur envoi à Vinted. Votre connexion se fait directement sur Vinted.</p></details>`;
+  return `<details id="vinted-install"><summary>${vintedHelper.connected && !vintedHelper.ready ? "Mettre à jour le compagnon Vinted" : "Activer le remplissage Vinted (une seule fois)"}</summary><p>Sur cet ordinateur, utilisez le compagnon dans Chrome ou Edge.</p><ol><li>${btn("Télécharger l’extension Chrome / Edge", "vinted-extension-download", "secondary")} puis décompressez le ZIP.</li><li>Si l’extension est déjà installée, remplacez les fichiers du dossier déjà chargé avec ceux du ZIP. Dans <strong>chrome://extensions</strong> (ou <strong>edge://extensions</strong>), cliquez sur la flèche circulaire « Recharger » de Poke Scan Sell — Vinted.</li><li>Pour une première installation, activez le mode développeur, cliquez sur « Charger l’extension non empaquetée » et sélectionnez le dossier <strong>poke-scan-sell-vinted</strong>.</li><li>Rechargez les onglets de cette application et de Vinted, puis relancez « Remplir mon annonce sur Vinted ».</li></ol><p class="muted">Le compagnon téléchargé est associé à l’adresse de cette application. Les photos transitent dans ce navigateur avant leur envoi à Vinted. Votre connexion se fait directement sur Vinted.</p></details>`;
+}
+function vintedConnectionText() {
+  if (!vintedHelper.connected)
+    return "Activez le compagnon Chrome / Edge une seule fois pour utiliser le remplissage.";
+  if (!vintedHelper.ready)
+    return `Compagnon Vinted v${vintedHelper.version} : mise à jour nécessaire. Téléchargez la nouvelle extension et rechargez-la dans Chrome / Edge.`;
+  return `Compagnon Vinted connecté · v${vintedHelper.version}.`;
 }
 function vintedTransferView(errors) {
-  return `<div class="transfer"><h3>Remplir votre annonce Vinted</h3><p>Envoyez le titre, la description, le prix et vos photos originales en un clic. La catégorie et l’état sont sélectionnés lorsqu’ils sont reconnus dans le formulaire.</p><p id="vinted-connection-status" class="muted">${vintedHelper ? "Compagnon Vinted connecté." : "Activez le compagnon Chrome / Edge une seule fois pour utiliser le remplissage."}</p><div class="actions">${btn(icon("arrow") + " Remplir mon annonce sur Vinted", "vinted-fill", "primary", errors.length ? "disabled" : "")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div><p id="vinted-transfer-status" role="status">${esc(active.vintedTransferMessage || "Vérifiez les photos et les champs demandés sur Vinted, puis publiez votre annonce.")}</p>${vintedInstallationView()}<details><summary>Ouvrir Vinted pour un transfert manuel</summary><a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a><p>Le titre et la description peuvent aussi être copiés avec les boutons ci-dessus ; le ZIP contient vos photos.</p></details></div>`;
+  return `<div class="transfer"><h3>Remplir votre annonce Vinted</h3><p>Envoyez le titre, la description, le prix et vos photos originales en un clic. La catégorie et l’état sont sélectionnés lorsqu’ils sont reconnus dans le formulaire.</p><p id="vinted-connection-status" class="muted">${esc(vintedConnectionText())}</p><div class="actions">${btn(icon("arrow") + " Remplir mon annonce sur Vinted", "vinted-fill", "primary", errors.length ? "disabled" : "")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div><p id="vinted-transfer-status" role="status">${esc(active.vintedTransferMessage || "Vérifiez les photos et les champs demandés sur Vinted, puis publiez votre annonce.")}</p>${vintedInstallationView()}<details><summary>Ouvrir Vinted pour un transfert manuel</summary><a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a><p>Le titre et la description peuvent aussi être copiés avec les boutons ci-dessus ; le ZIP contient vos photos.</p></details></div>`;
 }
 function listingView(compact = false) {
   compact = compact === true;
@@ -491,13 +498,15 @@ app.addEventListener("click", async (event) => {
       await runJob("Connexion au compagnon Vinted…", async () => {
         makeVintedDraft(active);
         vintedHelper = await checkVintedHelper();
-        if (!vintedHelper) {
+        if (!vintedHelper.ready) {
           render();
           const instructions = document.querySelector("#vinted-install");
           instructions.open = true;
           instructions.scrollIntoView({ behavior: "smooth", block: "start" });
           toast(
-            "Activez le compagnon une seule fois, puis rechargez l’application.",
+            vintedHelper.connected
+              ? "Mettez à jour l’extension puis rechargez-la dans Chrome / Edge."
+              : "Activez le compagnon une seule fois, puis rechargez l’application.",
           );
           return;
         }
@@ -1118,11 +1127,8 @@ try {
 async function refreshVintedConnection() {
   vintedHelper = await checkVintedHelper();
   const connection = document.querySelector("#vinted-connection-status");
-  if (connection)
-    connection.textContent = vintedHelper
-      ? "Compagnon Vinted connecté."
-      : "Activez le compagnon Chrome / Edge une seule fois pour utiliser le remplissage.";
-  if (!vintedHelper || !active?.vintedTransferId) return;
+  if (connection) connection.textContent = vintedConnectionText();
+  if (!vintedHelper.ready || !active?.vintedTransferId) return;
   const card = active;
   try {
     const receipt = await getVintedStatus(card.vintedTransferId);
