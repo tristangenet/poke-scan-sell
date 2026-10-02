@@ -15,7 +15,7 @@ export const fixture = `<!doctype html><html lang="fr"><head><meta charset="utf-
 <h1>Vends ton article — formulaire de contrôle</h1><form>
 <label for="title">Titre</label><input id="title" maxlength="100">
 <label for="description">Description</label><textarea id="description"></textarea>
-<label for="price">Prix</label><input id="price" type="text" inputmode="decimal">
+<label for="price">Prix</label><input id="price" type="text" inputmode="decimal" placeholder="0,00">
 <label for="catalog_id">Catégorie</label><select id="catalog_id"><option value="">Choisir</option><option value="other">Autre</option><option value="cards">Cartes à collectionner</option></select>
 <label for="status_id">État</label><select id="status_id"><option value="">Choisir</option><option value="very-good">Très bon état</option><option value="good">Bon état</option></select>
 <label for="images">Photos</label><input id="images" type="file" accept="image/*" multiple>

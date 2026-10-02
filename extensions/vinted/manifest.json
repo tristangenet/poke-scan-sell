@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Poke Scan Sell — Vinted",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Transfère votre annonce et vos photos depuis Poke Scan Sell vers le formulaire Vinted.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAojIJ61M4DDySq/sKPIkAnAuA2wzMbL9BD3mTkv2MAGn/VwjVq/AUV6l3JMJdufA27YLbx6oVyhjctNwWBVWWDF/vppsOSVaoQr1BCDjTeBEpZbs046DDDN1ZFTFPYIY5dXjxKZQNA9zYZTSJcaIlZu4nAkinkooLRrU86MzrUt/GCOgEIxGQBhOdCaXhiWjyIKbVuKWLminYzf6zhbtlf8PfGnfV7gI6PUdGCCs5D/2ZYdRZ6S+uF7oceh/8mlO2jd1x05FIxhliZoJMqTUrVhjxPtU5b5Iep/ZI2NTFUX4uyrooL0ZHBcSSpYRVgCUZ8bvYvHF2hlhuyRrWYvhtvQIDAQAB",
   "permissions": ["alarms", "unlimitedStorage"],

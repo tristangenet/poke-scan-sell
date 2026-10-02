@@ -6,7 +6,7 @@ const script = await readFile(
   "utf8",
 );
 import { data, draft, fixture, readyCard } from "./support/vinted-fixture.js";
-async function controlForm(page, setup = () => {}) {
+async function controlForm(page, setup = () => {}, setupArg) {
   await page.route("https://www.vinted.fr/items/new", (route) =>
     route.fulfill({ contentType: "text/html", body: fixture }),
   );
@@ -51,7 +51,7 @@ async function controlForm(page, setup = () => {}) {
     },
     { draft, data },
   );
-  await page.evaluate(setup);
+  await page.evaluate(setup, setupArg);
   await page.addScriptTag({ content: script });
 }
 test("Vinted : texte corrigé, prix décimal, état, catégorie et photos originaux transférés sans publier", async ({
@@ -111,6 +111,7 @@ test("Vinted : repérage par libellés, prix numérique et attributs inconnus si
       document.getElementById(id).id = `custom-${id}`;
     }
     document.querySelector("#custom-price").type = "number";
+    document.querySelector("#custom-price").step = "0.01";
     document.querySelector("#custom-price").value = "0";
     document.querySelector("#catalog_id").remove();
     document.querySelector("#status_id").remove();
@@ -123,6 +124,141 @@ test("Vinted : repérage par libellés, prix numérique et attributs inconnus si
     "condition",
     "parcel",
   ]);
+});
+
+for (const format of ["dot", "comma", "number", "fallback", "plain"]) {
+  test(`Vinted : prix exact et validé avec le format ${format}`, async ({
+    page,
+  }) => {
+    await controlForm(
+      page,
+      (format) => {
+        const input = document.getElementById("price");
+        input.placeholder = ["comma", "fallback"].includes(format)
+          ? "0,00"
+          : format === "plain"
+            ? ""
+            : "0.00";
+        if (format === "dot") input.pattern = "[0-9]+(?:\\.[0-9]{1,2})?";
+        if (format === "comma") input.pattern = "[0-9]+(?:,[0-9]{1,2})?";
+        if (format === "number") {
+          input.type = "number";
+          input.step = "0.01";
+        }
+        input.addEventListener("blur", () => {
+          if (format === "fallback" && input.value) {
+            // A controlled money field can normalize a comma to an incorrect integer.
+            input.value = String(parseFloat(input.value));
+          }
+          window.priceCommitted =
+            input.validity.valid && input.value
+              ? format === "plain"
+                ? parseFloat(input.value)
+                : Number(input.value.replace(",", "."))
+              : null;
+        });
+      },
+      format,
+    );
+    await expect(page.locator("#price")).toHaveValue(
+      format === "comma" ? "12,25" : "12.25",
+    );
+    await expect
+      .poll(() => page.evaluate(() => window.priceCommitted))
+      .toBe(draft.price);
+    expect(
+      await page.evaluate(
+        () => document.getElementById("price").validity.valid,
+      ),
+    ).toBe(true);
+    await expect
+      .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+      .toBe("filled");
+    expect(await page.evaluate(() => window.published)).toBe(0);
+  });
+}
+
+test("Vinted : prix dans un composant avec titre de section, suffixe field/input et devise", async ({
+  page,
+}) => {
+  await controlForm(page, () => {
+    const input = document.getElementById("price");
+    document.querySelector('[for="price"]').remove();
+    const section = document.createElement("section");
+    section.innerHTML = "<h4>Prix</h4><div><span>€</span></div>";
+    input.before(section);
+    section.querySelector("div").append(input);
+    input.id = "amount-control";
+    input.setAttribute("data-testid", "price-field--input");
+    input.inputMode = "numeric";
+    input.placeholder = "0.00 €";
+    input.pattern = "[0-9]+(?:\\.[0-9]{1,2})?";
+  });
+  await expect(page.locator("#amount-control")).toHaveValue("12.25");
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("filled");
+});
+
+test("Vinted : prix refusé jamais annoncé comme rempli et montant erroné retiré", async ({
+  page,
+}) => {
+  await controlForm(page, () => {
+    const input = document.getElementById("price");
+    input.placeholder = "0.00";
+    input.pattern = "[0-9]+";
+    input.addEventListener("blur", () => {
+      if (input.value)
+        input.value = String(Math.trunc(Number(input.value.replace(",", "."))));
+    });
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("partial");
+  expect(await page.evaluate(() => window.reports.at(-1).missing)).toContain(
+    "price",
+  );
+  await expect(page.locator("#price")).toHaveValue("");
+  await expect(page.locator("#title")).toHaveValue(draft.title);
+  await expect(page.locator("#photo-result")).toHaveText("2 photos reçues");
+});
+
+test("Vinted : un prix déjà saisi pour un autre brouillon est conservé", async ({
+  page,
+}) => {
+  await controlForm(page, () => {
+    document.getElementById("price").value = "7,00";
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("blocked");
+  await expect(page.locator("#price")).toHaveValue("7,00");
+  await expect(page.locator("#title")).toHaveValue("");
+  expect(await page.evaluate(() => window.photoReads)).toBe(0);
+});
+
+test("Vinted : une saisie utilisateur pendant la validation du prix est conservée", async ({
+  page,
+}) => {
+  await controlForm(page, () => {
+    const input = document.getElementById("price");
+    input.placeholder = "0.00";
+    input.pattern = "[0-9]+(?:\\.[0-9]{1,2})?";
+  });
+  await expect(page.locator("#price")).toHaveValue("12.25");
+  await page.locator("#price").fill("17.00");
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("partial");
+  await expect(page.locator("#price")).toHaveValue("17.00");
+  expect(await page.evaluate(() => window.reports.at(-1).missing)).toContain(
+    "price",
+  );
+  expect(
+    await page.evaluate(
+      () => window.helperRoot.querySelector('[role="status"]').textContent,
+    ),
+  ).toContain("votre saisie");
 });
 
 test("application : extension absente, installation guidée et ZIP associé uniquement à cette adresse", async ({
@@ -167,7 +303,7 @@ test("application : un clic transmet texte et photos, puis une modification bloq
       sendMessage(id, message, reply) {
         window.sent.push(message);
         if (message.type === "ping")
-          return reply({ ok: true, protocol: 1, version: "0.2.7" });
+          return reply({ ok: true, protocol: 1, version: "0.2.8" });
         if (message.type === "prepare")
           return reply({ ok: true, id: "transfer" });
         if (message.type === "status")

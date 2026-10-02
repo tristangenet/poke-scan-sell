@@ -8,7 +8,7 @@
   const createPage = () => /^\/items\/new\/?$/.test(location.pathname);
   const visible = (el) => el && el.getClientRects().length > 0 && !el.disabled;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const version = "0.2.7";
+  const version = "0.2.8";
   const core = ["title", "description", "price"];
   const names = {
     title: "titre",
@@ -110,8 +110,12 @@
     const key = normalize(text);
     return aliases[name].some((alias) => {
       const base = normalize(alias).replace(/^item/, "");
+      const suffix =
+        name === "price"
+          ? "(?:input|field|textbox|textarea){0,2}"
+          : "(?:input|field|textarea|textbox|dropdown|select)?";
       return new RegExp(
-        `^(?:input|textarea)?(?:itemupload|item|upload|listing|sell)?${base}(?:input|field|textarea|textbox|dropdown|select)?$`,
+        `^(?:input|textarea)?(?:itemupload|item|upload|listing|sell)?${base}${suffix}$`,
       ).test(key);
     });
   }
@@ -154,9 +158,13 @@
       if (identifier(parent.getAttribute("data-testid"), name))
         rank = Math.max(rank, 80);
       if (
-        [...parent.querySelectorAll("label, legend")].some((label) =>
-          labelMatches(label.textContent, name),
-        )
+        [
+          ...parent.querySelectorAll(
+            name === "price"
+              ? 'label, legend, h2, h3, h4, [role="heading"]'
+              : "label, legend",
+          ),
+        ].some((label) => labelMatches(label.textContent, name))
       )
         rank = Math.max(rank, 70);
     }
@@ -164,7 +172,7 @@
       rank = Math.max(rank, 40);
     if (
       name === "price" &&
-      (el.inputMode === "decimal" || el.type === "number") &&
+      (["decimal", "numeric"].includes(el.inputMode) || el.type === "number") &&
       /^\s*0[.,]00\s*(?:€|EUR)?\s*$/i.test(el.getAttribute("placeholder") || "")
     )
       rank = Math.max(rank, 35);
@@ -187,6 +195,25 @@
   }
   const valueOf = (el) =>
     String(el.isContentEditable ? el.textContent : el.value || "");
+  function priceValid(el) {
+    return (
+      el &&
+      el.validity?.valid !== false &&
+      el.getAttribute("aria-invalid") !== "true"
+    );
+  }
+  function priceFormats(el, amount) {
+    const dot = amount.toFixed(2),
+      comma = dot.replace(".", ",");
+    if (el.type === "number") return [dot];
+    const hint = (el.getAttribute("placeholder") || "").match(
+      /[.,]\d{1,2}/,
+    )?.[0][0];
+    const pattern = el.getAttribute("pattern") || "";
+    const dotOnly = pattern.includes("\\.") && !pattern.includes(",");
+    const preferComma = !dotOnly && hint === ",";
+    return preferComma ? [comma, dot] : [dot, comma];
+  }
   function diagnostic(stage) {
     const attribute = (el, key) => {
       const value = el.getAttribute(key) || "";
@@ -209,6 +236,11 @@
           id: attribute(el, "id"),
           name: attribute(el, "name"),
           testId: attribute(el, "data-testid"),
+          inputMode: el.inputMode || "",
+          valid: el.validity?.valid !== false,
+          ariaInvalid: el.getAttribute("aria-invalid") === "true",
+          patternMismatch: el.validity?.patternMismatch === true,
+          stepMismatch: el.validity?.stepMismatch === true,
         })),
     };
   }
@@ -233,6 +265,48 @@
     );
     el.dispatchEvent(new Event("change", { bubbles: true }));
     el.blur();
+  }
+  async function fillPrice(input, amount) {
+    const original = valueOf(input);
+    let userEdited = false;
+    const onInput = (event) => {
+      if (
+        event.isTrusted &&
+        (event.target === input || event.target === field("price"))
+      )
+        userEdited = true;
+    };
+    document.addEventListener("input", onInput, true);
+    try {
+      for (const format of priceFormats(input, amount)) {
+        if (userEdited) return { accepted: false, reason: "user-edit" };
+        const current = field("price");
+        if (!current) return { accepted: false, reason: "not-found" };
+        const value = current.type === "number" ? amount.toFixed(2) : format;
+        if (current.maxLength > 0 && value.length > current.maxLength) continue;
+        show("Saisie et validation du prix…");
+        setValue(current, value);
+        // Allow controlled currency inputs to normalize and validate on blur.
+        await delay(300);
+        if (userEdited) return { accepted: false, reason: "user-edit" };
+        const actual = field("price");
+        const accepted =
+          actual && numeric(valueOf(actual)) === amount && priceValid(actual);
+        log("price:checked", {
+          separator: value.includes(",") ? "comma" : "dot",
+          accepted: !!accepted,
+          valid: !!priceValid(actual),
+        });
+        if (accepted) return { accepted: true, reason: "" };
+      }
+      // Restore the prior value if both formats were refused or changed the amount.
+      // A real user edit is never replaced by a retry or this restoration.
+      const current = field("price");
+      if (!userEdited && current) setValue(current, original);
+      return { accepted: false, reason: "rejected" };
+    } finally {
+      document.removeEventListener("input", onInput, true);
+    }
   }
   function ensurePanel() {
     if (panel) return panel;
@@ -341,7 +415,7 @@
     );
   function same(el, name, draft) {
     return name === "price"
-      ? numeric(valueOf(el)) === draft.price
+      ? numeric(valueOf(el)) === draft.price && priceValid(el)
       : valueOf(el).trim() === draft[name];
   }
   function photoInput() {
@@ -538,6 +612,7 @@
       const chosen = new Set(),
         attempted = new Set(),
         writes = new Map();
+      let priceIssue = "";
       const deadline = Date.now() + 20000;
       while (Date.now() < deadline) {
         if (!createPage()) return;
@@ -547,7 +622,9 @@
             input &&
             valueOf(input).trim() &&
             !(name === "price" && numeric(valueOf(input)) === 0) &&
-            !same(input, name, draft)
+            !(name === "price"
+              ? numeric(valueOf(input)) === draft.price
+              : same(input, name, draft))
           );
         });
         if (conflict || (hasExistingPhotos() && !transfer.photosSubmitted)) {
@@ -572,12 +649,16 @@
           if (!input || same(input, name, draft)) continue;
           const last = writes.get(name);
           if (last?.el === input && last.count >= 3) continue;
-          const value =
-            name === "price"
-              ? draft.price
-                  .toFixed(2)
-                  .replace(".", input.type === "number" ? "." : ",")
-              : draft[name];
+          if (name === "price") {
+            const result = await fillPrice(input, draft.price);
+            priceIssue = result.reason;
+            writes.set(name, {
+              el: field("price") || input,
+              count: result.accepted ? 1 : 3,
+            });
+            continue;
+          }
+          const value = draft[name];
           if (input.maxLength > 0 && value.length > input.maxLength) {
             writes.set(name, { el: input, count: 3 });
             continue;
@@ -653,6 +734,13 @@
         ["title", "description", "price"].every((name) =>
           filled.includes(name),
         ) && photosSubmitted;
+      const priceExplanation = filled.includes("price")
+        ? ""
+        : priceIssue === "user-edit"
+          ? "Prix : votre saisie dans Vinted a été conservée."
+          : priceIssue === "not-found" || !field("price")
+            ? "Prix : champ non reconnu ou encore désactivé."
+            : "Prix : le formulaire a refusé le montant exact. Aucun prix transformé n’est validé.";
       await request({
         type: "report",
         id,
@@ -668,7 +756,7 @@
       });
       if (!coreComplete) log("form:partial", diagnostic("partial"));
       show(
-        `${coreComplete ? "Titre, description et prix remplis. Photos transmises au formulaire." : "Transfert partiel : les champs disponibles ont été remplis. Un champ absent, ambigu ou refusé est signalé ci-dessous."}\nÀ vérifier ou compléter : ${missing.map((name) => names[name]).join(", ")}.\nVérifiez le résultat des photos et cliquez sur Publier quand votre annonce est prête.`,
+        `${coreComplete ? "Titre, description et prix remplis. Photos transmises au formulaire." : "Transfert partiel : les champs disponibles ont été remplis. Un champ absent, ambigu ou refusé est signalé ci-dessous."}${priceExplanation ? `\n${priceExplanation}` : ""}\nÀ vérifier ou compléter : ${missing.map((name) => names[name]).join(", ")}.\nVérifiez le résultat des photos et cliquez sur Publier quand votre annonce est prête.`,
         !coreComplete,
       );
       completed = true;

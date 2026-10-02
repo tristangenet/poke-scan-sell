@@ -1,4 +1,4 @@
-# Architecture — version 0.2.7
+# Architecture — version 0.2.8
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -35,6 +35,8 @@ IA optionnelle : https://developers.openai.com/api/docs/guides/images-vision et 
 Vinted : compagnon Manifest V3 dans `extensions/vinted`, téléchargé depuis l’application via `src/vinted-transfer.js`. L’origine de l’application est liée dans le ZIP et vérifiée sur chaque message externe. Une file IndexedDB reçoit les photos séparément pour rester sous la taille limite des messages Chrome. Le service worker ouvre un nouvel onglet et lie le transfert à son identifiant ; seules les pages Vinted de cet onglet reçoivent les données. Le script de contenu remplit les champs reconnus avec les événements du formulaire, transfère les originaux via File/DataTransfer, puis remonte un résultat. Catégorie et état sont sélectionnés uniquement par libellés reconnus. Les brouillons préexistants sont conservés ; un résultat précédent évite un nouvel envoi des photos lors d’une reprise. Les originaux temporaires sont retirés après transfert complet ou fermeture de l’onglet, et les transferts expirés sont purgés toutes les cinq minutes après leur délai de trente minutes. Aucun accès aux cookies, aucune API privée, collecte automatisée, session partagée ou clic de publication automatique. Le copier-coller et le ZIP restent des replis.
 
 Le remplissage Vinted progresse par champ, avec priorité aux identifiants et libellés associés, puis aux conteneurs portant un seul contrôle et aux placeholders reconnus. Les égalités de score et contrôles de recherche ne sont pas remplis. Les champs et photos sont recherchés pendant vingt secondes, indépendamment les uns des autres ; chaque message a un délai maximal. Le worker conserve un point de reprise dès l’envoi des photos au formulaire pour éviter un doublon si un champ échoue ensuite. Les journaux de progression et le diagnostic copiable ne contiennent pas le contenu de l’annonce ni les photos. L’application exige une version de compagnon au moins égale à celle qu’elle distribue, avec protocole compatible ; l’identifiant d’extension reste stable.
+
+La saisie du prix distingue champs numériques et champs monétaires texte. Le séparateur est choisi selon le type, l’indication du champ et son motif de validation ; le point est le format par défaut. Deux formats au maximum sont essayés, avec validation après perte de focus et comparaison du montant exact. Une valeur transformée ou invalidée par le composant n’est pas comptée comme remplie. La valeur antérieure est restaurée en cas de refus ; les événements de saisie utilisateur interrompent la reprise. Les diagnostics indiquent le mode numérique et les échecs de validation sans conserver le montant saisi.
 
 ## Limites
 

@@ -1,4 +1,4 @@
-# Validation — version 0.2.7
+# Validation — version 0.2.8
 
 Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Les vérifications externes précédentes conservent leurs dates ci-dessous.
 
@@ -6,7 +6,7 @@ Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Le
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
 | Tests unitaires et serveur Node            | 37 réussis                                                 |
-| Parcours navigateur Chromium               | 26 réussis                                                 |
+| Parcours navigateur Chromium               | 35 réussis                                                 |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
@@ -14,6 +14,10 @@ Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Le
 | Publication réelle sur Vinted              | Non exécutée ; mode manuel assisté uniquement              |
 
 ## Transfert Vinted
+
+Régression prix 0.2.8 : six nouveaux formulaires de contrôle ont d’abord exercé le script 0.2.7. Les formats à virgule et numérique fonctionnaient ; quatre cas échouaient : format texte à point recevant `12,25`, champ monétaire normalisant cette saisie en `12`, composant avec titre « Prix » et identifiant `price-field--input` restant vide, et montant transformé entraînant un blocage plutôt qu’un résultat partiel. Les six cas passent après correction. Deux autres parcours vérifient qu’un prix antérieur d’un autre brouillon et une saisie utilisateur pendant la validation ne sont pas écrasés. La validation du prix porte sur le montant exact, les contraintes natives et `aria-invalid`, avec reprise de séparateur et restauration de la valeur antérieure en cas de refus. Les vingt parcours Vinted passent, ainsi que les tests Node et la construction. Un neuvième nouveau cas vérifie un champ sans indication de format dont la valeur affichée peut rester à virgule tandis que son état numérique utilise parseFloat ; le format par défaut à point conserve le montant exact. Ce cas passe aussi. Les quatorze autres parcours de l’application passent, soit trente-cinq parcours navigateur et trente-sept tests Node au total.
+
+Le retour utilisateur du 2 octobre confirme que le reste du transfert fonctionne, avec un prix encore manquant. Aucun diagnostic du champ réel n’a été reçu pendant cette correction ; le cas précis du compte utilisateur n’a donc pas été observé et reste à confirmer après mise à jour du compagnon 0.2.8.
 
 Régression 0.2.7 : comparaison des scripts 0.2.6 et 0.2.7 sur un même formulaire dont les champs sont désactivés jusqu’à l’ajout de photos. Après 1,2 seconde, 0.2.6 reste en chargement, titre vide et aucune photo ; 0.2.7 a rempli le titre, la description et le prix, soumis deux photos et reçu un résultat `filled`. Ce formulaire est contrôlé ; le blocage exact du formulaire utilisateur n’a pas été observé.
 

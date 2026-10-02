@@ -4,7 +4,7 @@ Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, v
 
 ![Vue d’ensemble de l’application](docs/screenshots/desktop.png)
 
-## Version 0.2.7 — mode rapide et remplissage Vinted progressif
+## Version 0.2.8 — mode rapide et prix Vinted
 
 Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
 
@@ -56,6 +56,8 @@ Après validation de votre carte, cliquez sur **Remplir mon annonce sur Vinted**
 Le compagnon est associé à l’origine exacte de l’application qui a fourni le ZIP. Une autre adresse nécessite un nouveau téléchargement de l’extension. Il attend la connexion sur Vinted, conserve un brouillon existant au lieu de l’écraser, signale les champs restants et laisse le clic **Publier** au vendeur. Voir [le guide Vinted](docs/VINTED.md).
 
 La version 0.2.7 remplit les champs disponibles sans attendre que titre, description et prix soient tous reconnus. Les photos peuvent débloquer des champs encore désactivés. Une attente ou un message sans réponse finit par un résultat explicite, avec diagnostic technique copiable en cas d’échec. L’application signale les anciennes extensions : **après avoir mis à jour l’application, remplacer aussi les fichiers du dossier de l’extension puis cliquer sur Recharger dans Chrome / Edge**. Recharger les deux onglets avant le prochain transfert.
+
+La version 0.2.8 adapte la saisie du prix au séparateur du champ, vérifie le montant exact après validation et essaie l’autre format si nécessaire. Un montant refusé ou transformé n’est plus annoncé comme rempli ; la valeur initiale est restaurée. Les prix déjà saisis et les modifications faites dans Vinted pendant le transfert sont conservés. Les composants avec un titre « Prix », un mode numérique ou un identifiant `price-field--input` sont aussi reconnus.
 
 ## Activer l'analyse IA
 
