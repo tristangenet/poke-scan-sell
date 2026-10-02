@@ -233,7 +233,8 @@ export async function handleVinted(message, sender) {
     };
     record.status = message.status;
     record.result = result;
-    // Originals are removed as soon as the form has received them and the text.
+    // A filled report confirms text, exact price, photos and selected condition.
+    // Partial reports retain the draft so a failed selector can be retried.
     if (message.status === "filled") {
       record.draft = null;
       record.files = [];

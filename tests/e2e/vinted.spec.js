@@ -5,8 +5,19 @@ const script = await readFile(
   new URL("../../extensions/vinted/content.js", import.meta.url),
   "utf8",
 );
-import { data, draft, fixture, readyCard } from "./support/vinted-fixture.js";
-async function controlForm(page, setup = () => {}, setupArg) {
+import {
+  data,
+  draft,
+  fixture,
+  readyCard,
+  installConditionSelector,
+} from "./support/vinted-fixture.js";
+async function controlForm(
+  page,
+  setup = () => {},
+  setupArg,
+  conditionSelector,
+) {
   await page.route("https://www.vinted.fr/items/new", (route) =>
     route.fulfill({ contentType: "text/html", body: fixture }),
   );
@@ -52,8 +63,124 @@ async function controlForm(page, setup = () => {}, setupArg) {
     { draft, data },
   );
   await page.evaluate(setup, setupArg);
+  if (conditionSelector)
+    await page.evaluate(installConditionSelector, conditionSelector);
   await page.addScriptTag({ content: script });
 }
+
+for (const [condition, expected] of [
+  ["EX", "very-good"],
+  ["GD", "good"],
+  ["PL", "satisfactory"],
+]) {
+  test(`Vinted : état ${condition} sélectionné dans la liste radio avec descriptions`, async ({
+    page,
+  }) => {
+    await controlForm(
+      page,
+      async (condition) => {
+        const send = chrome.runtime.sendMessage;
+        chrome.runtime.sendMessage = (message, reply) =>
+          send(message, (result) => {
+            if (message.type === "read-draft")
+              result.draft.condition = condition;
+            reply(result);
+          });
+      },
+      condition,
+      {},
+    );
+    await expect
+      .poll(() => page.evaluate(() => window.conditionCommitted))
+      .toBe(expected);
+    await expect(page.locator("#state-trigger")).toHaveValue(
+      {
+        "very-good": "Très bon état",
+        good: "Bon état",
+        satisfactory: "Satisfaisant",
+      }[expected],
+    );
+    await expect
+      .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+      .toBe("filled");
+    expect(await page.evaluate(() => window.reports.at(-1).fields)).toContain(
+      "condition",
+    );
+    await expect(page.locator("#price")).toHaveValue("12,25");
+    await expect(page.locator("#photo-result")).toHaveText("2 photos reçues");
+    expect(await page.evaluate(() => window.published)).toBe(0);
+  });
+}
+
+for (const kind of ["row", "button"]) {
+  test(`Vinted : état reconnu dans le sélecteur ${kind}`, async ({ page }) => {
+    await controlForm(page, () => {}, undefined, { kind });
+    await expect
+      .poll(() => page.evaluate(() => window.conditionCommitted))
+      .toBe("very-good");
+    await expect
+      .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+      .toBe("filled");
+    expect(await page.evaluate(() => window.published)).toBe(0);
+  });
+}
+
+test("Vinted : attend l’état monté après la catégorie avant de terminer", async ({
+  page,
+}) => {
+  await controlForm(page, () => {}, undefined, { delayed: true });
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("filled");
+  await expect(page.locator("#state-trigger")).toHaveValue("Très bon état");
+  expect(await page.evaluate(() => window.conditionCommitted)).toBe(
+    "very-good",
+  );
+});
+
+test("Vinted : état ambigu signalé sans choisir ni publier", async ({
+  page,
+}) => {
+  await controlForm(page, () => {}, undefined, { ambiguous: true });
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status), {
+      timeout: 8000,
+    })
+    .toBe("partial");
+  expect(await page.evaluate(() => window.conditionCommitted)).toBeUndefined();
+  expect(await page.evaluate(() => window.reports.at(-1).missing)).toContain(
+    "condition",
+  );
+  expect(await page.evaluate(() => window.published)).toBe(0);
+});
+
+test("Vinted : état refusé puis reprise sans renvoyer les photos", async ({
+  page,
+}) => {
+  await controlForm(page, () => {}, undefined, { rejected: true });
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status), {
+      timeout: 8000,
+    })
+    .toBe("partial");
+  expect(await page.evaluate(() => window.reports.at(-1).fields)).not.toContain(
+    "condition",
+  );
+  await page.evaluate(() => {
+    window.rejectCondition = false;
+    [...window.helperRoot.querySelectorAll("button")]
+      .find((button) => button.textContent === "Reprendre le remplissage")
+      .click();
+  });
+  await expect
+    .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+    .toBe("filled");
+  expect(await page.evaluate(() => window.conditionCommitted)).toBe(
+    "very-good",
+  );
+  expect(await page.evaluate(() => window.photoReads)).toBe(2);
+  expect(await page.evaluate(() => window.published)).toBe(0);
+});
 test("Vinted : texte corrigé, prix décimal, état, catégorie et photos originaux transférés sans publier", async ({
   page,
 }) => {
@@ -118,7 +245,10 @@ test("Vinted : repérage par libellés, prix numérique et attributs inconnus si
   });
   await expect(page.locator("#custom-title")).toHaveValue(draft.title);
   await expect(page.locator("#custom-price")).toHaveValue("12.25");
-  await expect.poll(() => page.evaluate(() => window.reports.length)).toBe(1);
+  await expect
+    .poll(() => page.evaluate(() => window.reports.length), { timeout: 25000 })
+    .toBe(1);
+  expect(await page.evaluate(() => window.reports[0].status)).toBe("partial");
   expect(await page.evaluate(() => window.reports[0].missing)).toEqual([
     "category",
     "condition",
@@ -303,7 +433,7 @@ test("application : un clic transmet texte et photos, puis une modification bloq
       sendMessage(id, message, reply) {
         window.sent.push(message);
         if (message.type === "ping")
-          return reply({ ok: true, protocol: 1, version: "0.2.8" });
+          return reply({ ok: true, protocol: 1, version: "0.2.9" });
         if (message.type === "prepare")
           return reply({ ok: true, id: "transfer" });
         if (message.type === "status")

@@ -8,7 +8,7 @@
   const createPage = () => /^\/items\/new\/?$/.test(location.pathname);
   const visible = (el) => el && el.getClientRects().length > 0 && !el.disabled;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const version = "0.2.8";
+  const version = "0.2.9";
   const core = ["title", "description", "price"];
   const names = {
     title: "titre",
@@ -30,7 +30,7 @@
     description: ["description", "item_description"],
     price: ["price", "item_price"],
     category: ["catalog_id", "category", "item_catalog_id"],
-    condition: ["status_id", "condition", "item_status_id"],
+    condition: ["status_id", "status", "condition", "item_status_id"],
   };
   const labels = {
     title: ["titre", "titredelannonce", "title"],
@@ -113,7 +113,9 @@
       const suffix =
         name === "price"
           ? "(?:input|field|textbox|textarea){0,2}"
-          : "(?:input|field|textarea|textbox|dropdown|select)?";
+          : name === "condition"
+            ? "(?:input|field|textbox|textarea|dropdown|select|button|trigger){0,2}"
+            : "(?:input|field|textarea|textbox|dropdown|select)?";
       return new RegExp(
         `^(?:input|textarea)?(?:itemupload|item|upload|listing|sell)?${base}${suffix}$`,
       ).test(key);
@@ -160,15 +162,28 @@
       if (
         [
           ...parent.querySelectorAll(
-            name === "price"
-              ? 'label, legend, h2, h3, h4, [role="heading"]'
-              : "label, legend",
+            name === "condition"
+              ? 'label, legend, h2, h3, h4, [role="heading"], p, span'
+              : name === "price"
+                ? 'label, legend, h2, h3, h4, [role="heading"]'
+                : "label, legend",
           ),
-        ].some((label) => labelMatches(label.textContent, name))
+        ].some((label) =>
+          name === "condition" && ["P", "SPAN"].includes(label.tagName)
+            ? labels.condition.includes(normalize(label.textContent))
+            : labelMatches(label.textContent, name),
+        )
       )
         rank = Math.max(rank, 70);
     }
     if (labelMatches(el.getAttribute("placeholder"), name))
+      rank = Math.max(rank, 40);
+    if (
+      name === "condition" &&
+      /^(selectionne|selectionner|choisis|choisir|choisissez|select|choose)(un|an)?(etat|condition)$/.test(
+        normalize(el.getAttribute("placeholder") || el.textContent),
+      )
+    )
       rank = Math.max(rank, 40);
     if (
       name === "price" &&
@@ -445,17 +460,99 @@
     );
   }
   function selectedName(el) {
+    if (!el) return "";
     return normalize(
       el.tagName === "SELECT"
         ? el.selectedOptions[0]?.textContent
         : el.value || el.textContent,
     );
   }
+  function textChoice(el, wanted, selected = false) {
+    const texts = [
+      el,
+      ...el.querySelectorAll("span, p, div, strong, b, h3, h4"),
+    ];
+    return texts.some(
+      (part) =>
+        visible(part) &&
+        (!selected ||
+          !part.closest(
+            '[role="listbox"], [role="menu"], [role="option"], [role="menuitem"], [role="radio"]',
+          )) &&
+        wanted.includes(normalize(part.textContent)),
+    );
+  }
+  function selectedChoice(el, wanted) {
+    return (
+      !!el &&
+      (wanted.includes(selectedName(el)) ||
+        (!["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) &&
+          textChoice(el, wanted, true)))
+    );
+  }
+  function radioOf(el) {
+    if (el.matches('input[type="radio"]')) return el;
+    if (el.control?.type === "radio") return el.control;
+    return (
+      el.querySelector('input[type="radio"]') ||
+      (el.getAttribute("role") === "radio"
+        ? el
+        : el.querySelector('[role="radio"]'))
+    );
+  }
+  function selectorOptions(control, name) {
+    const linked =
+      `${control.getAttribute("aria-controls") || ""} ${control.getAttribute("aria-owns") || ""}`
+        .trim()
+        .split(/\s+/)
+        .map((id) => document.getElementById(id))
+        .filter(visible);
+    const roots = linked.length ? linked : [document];
+    const options = new Set(
+      roots.flatMap((root) => [
+        ...root.querySelectorAll(
+          name === "condition"
+            ? '[role="option"], [role="menuitem"], [role="radio"], [role="button"], button[type="button"], label, input[type="radio"]'
+            : '[role="option"], [role="menuitem"], button[type="button"], label',
+        ),
+      ]),
+    );
+    if (name === "condition") {
+      // Some Vinted rows have no option role: their radio and surrounding text
+      // identify a single choice. Do not promote a container of several choices.
+      for (const radio of [...options].filter((el) =>
+        el.matches('input[type="radio"], [role="radio"]'),
+      )) {
+        for (
+          let parent = radio.parentElement, depth = 0;
+          parent && depth < 4;
+          parent = parent.parentElement, depth++
+        ) {
+          const choices = [
+            ...parent.querySelectorAll('input[type="radio"], [role="radio"]'),
+          ];
+          const unique = new Set(choices.map(radioOf));
+          if (unique.size !== 1 || parent.contains(control)) break;
+          options.add(parent);
+        }
+      }
+    }
+    return [...options].filter(
+      (el) =>
+        visible(el) &&
+        !el.closest('header, nav, [role="search"]') &&
+        el.getAttribute("aria-disabled") !== "true" &&
+        el.type !== "submit" &&
+        (el.tagName !== "LABEL" || radioOf(el)) &&
+        !radioOf(el)?.disabled &&
+        radioOf(el)?.getAttribute("aria-disabled") !== "true",
+    );
+  }
   async function choose(name, choices, parents = []) {
     let control = field(name);
     if (!control) return false;
     const wanted = choices.map(normalize);
-    if (wanted.includes(selectedName(control))) return true;
+    if (selectedChoice(control, wanted)) return true;
     if (control.tagName === "SELECT") {
       const option = wanted
         .map((name) =>
@@ -465,36 +562,46 @@
       if (!option) return false;
       setValue(control, option.value);
       await delay(100);
-      return wanted.includes(selectedName(field(name) || control));
+      return selectedChoice(field(name), wanted);
     }
     // Only the identified category/state selector and visible matching options are clicked.
-    control.click();
+    if (control.getAttribute("aria-expanded") !== "true") control.click();
     const choice = () => {
-      const options = [
-        ...document.querySelectorAll(
-          '[role="option"], [role="menuitem"], button[type="button"], label',
-        ),
-      ].filter(
-        (el) =>
-          visible(el) &&
-          (el.tagName !== "LABEL" || el.querySelector('input[type="radio"]')),
-      );
+      const options = selectorOptions(field(name) || control, name);
       for (const group of [choices, ...parents]) {
-        for (const name of group.map(normalize)) {
-          const matches = options.filter((el) => name === optionName(el));
-          if (matches.length === 1)
-            return { el: matches[0], final: group === choices };
+        for (const label of group.map(normalize)) {
+          const matches = options.filter(
+            (el) =>
+              label === optionName(el) ||
+              (name === "condition" &&
+                (textChoice(el, [label]) ||
+                  [...(el.labels || [])].some((linked) =>
+                    textChoice(linked, [label]),
+                  ))),
+          );
+          const leaves = matches.filter(
+            (el) =>
+              !matches.some((other) => other !== el && el.contains(other)),
+          );
+          const unique = [
+            ...new Map(leaves.map((el) => [radioOf(el) || el, el])).values(),
+          ];
+          if (unique.length === 1)
+            return { el: unique[0], final: group === choices };
         }
       }
       return null;
     };
     for (let step = 0; step < 4; step++) {
-      const found = await waitFor(choice, 1500);
+      const found = await waitFor(choice, name === "condition" ? 3000 : 1500);
       if (!found) break;
       found.el.click();
       await delay(120);
       if (found.final)
-        return wanted.includes(selectedName(field(name) || control));
+        return !!(await waitFor(
+          () => selectedChoice(field(name), wanted),
+          2000,
+        ));
     }
     // Close an unrecognised selector without selecting an unrelated value.
     const current = field(name);
@@ -704,6 +811,7 @@
         }
         if (!attempted.has("condition") && field("condition")) {
           attempted.add("condition");
+          show("Sélection de l’état de la carte…");
           log("condition:start");
           if (draft.condition && (await choose("condition", states)))
             chosen.add("condition");
@@ -713,10 +821,22 @@
         transfer.fields = core.filter(
           (name) => field(name) && same(field(name), name, draft),
         );
+        if (!selectedChoice(field("condition"), states.map(normalize)))
+          chosen.delete("condition");
         const pending = core.filter((name) => !transfer.fields.includes(name));
         const rejected = pending.every((name) => writes.get(name)?.count >= 3);
-        if ((!pending.length || rejected) && photosAttempted) break;
-        const waiting = [...pending, ...(!photosAttempted ? ["photos"] : [])];
+        const conditionPending = !chosen.has("condition");
+        if (
+          (!pending.length || rejected) &&
+          photosAttempted &&
+          (!conditionPending || attempted.has("condition"))
+        )
+          break;
+        const waiting = [
+          ...pending,
+          ...(!photosAttempted ? ["photos"] : []),
+          ...(conditionPending ? ["condition"] : []),
+        ];
         show(
           `${transfer.fields.length ? `Champs remplis : ${transfer.fields.map((name) => names[name]).join(", ")}.\n` : ""}Attente du formulaire : ${waiting.map((name) => names[name]).join(", ")}…`,
         );
@@ -730,8 +850,8 @@
       const photosSubmitted = transfer.photosSubmitted;
       if (!photosSubmitted) missing.push("photos");
       missing.push("parcel");
-      const coreComplete =
-        ["title", "description", "price"].every((name) =>
+      const transferComplete =
+        ["title", "description", "price", "condition"].every((name) =>
           filled.includes(name),
         ) && photosSubmitted;
       const priceExplanation = filled.includes("price")
@@ -744,20 +864,20 @@
       await request({
         type: "report",
         id,
-        status: coreComplete ? "filled" : "partial",
+        status: transferComplete ? "filled" : "partial",
         fields: filled,
         missing,
         photosSubmitted,
       });
       log("transfer:done", {
-        status: coreComplete ? "filled" : "partial",
+        status: transferComplete ? "filled" : "partial",
         fields: filled,
         missing,
       });
-      if (!coreComplete) log("form:partial", diagnostic("partial"));
+      if (!transferComplete) log("form:partial", diagnostic("partial"));
       show(
-        `${coreComplete ? "Titre, description et prix remplis. Photos transmises au formulaire." : "Transfert partiel : les champs disponibles ont été remplis. Un champ absent, ambigu ou refusé est signalé ci-dessous."}${priceExplanation ? `\n${priceExplanation}` : ""}\nÀ vérifier ou compléter : ${missing.map((name) => names[name]).join(", ")}.\nVérifiez le résultat des photos et cliquez sur Publier quand votre annonce est prête.`,
-        !coreComplete,
+        `${transferComplete ? "Titre, description, prix et état remplis. Photos transmises au formulaire." : "Transfert partiel : les champs disponibles ont été remplis. Un champ absent, ambigu ou refusé est signalé ci-dessous."}${priceExplanation ? `\n${priceExplanation}` : ""}${missing.includes("condition") ? "\nÉtat : la sélection n’a pas été confirmée par le formulaire. Reprenez le remplissage lorsque la liste est disponible." : ""}\nÀ vérifier ou compléter : ${missing.map((name) => names[name]).join(", ")}.\nVérifiez le résultat des photos et cliquez sur Publier quand votre annonce est prête.`,
+        !transferComplete,
       );
       completed = true;
     } catch (e) {

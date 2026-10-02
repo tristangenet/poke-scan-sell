@@ -1135,7 +1135,7 @@ async function refreshVintedConnection() {
     if (active !== card) return;
     if (receipt.status === "filled")
       card.vintedTransferMessage =
-        "Titre, description et prix remplis ; photos transmises au formulaire. Vérifiez le résultat et les champs restants sur Vinted avant de publier.";
+        "Titre, description, prix et état remplis ; photos transmises au formulaire. Vérifiez le résultat et les champs restants sur Vinted avant de publier.";
     else if (["partial", "blocked"].includes(receipt.status))
       card.vintedTransferMessage =
         "Le remplissage demande votre attention. Consultez le message Poke Scan Sell dans l’onglet Vinted pour reprendre ou compléter les champs.";

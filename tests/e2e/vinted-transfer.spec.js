@@ -1,6 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-import { fixture, readyCard } from "./support/vinted-fixture.js";
+import {
+  fixture,
+  readyCard,
+  installConditionSelector,
+} from "./support/vinted-fixture.js";
 const content = await readFile(
   new URL("../../extensions/vinted/content.js", import.meta.url),
   "utf8",
@@ -9,7 +13,12 @@ const extensionId = "fdljjbnephkhdjoccpljmbohipiddlio";
 
 // The real queue, validation and content script run in Chromium. Only Chrome's
 // privileged tab/message APIs are represented by this fixture.
-async function companion(page, context, requireLogin = false) {
+async function companion(
+  page,
+  context,
+  requireLogin = false,
+  conditionSelector,
+) {
   const tabs = new Map();
   let nextTab = 1,
     login = requireLogin;
@@ -35,6 +44,12 @@ async function companion(page, context, requireLogin = false) {
       ),
     );
     await tab.addInitScript(() => {
+      const attach = Element.prototype.attachShadow;
+      Element.prototype.attachShadow = function (options) {
+        const root = attach.call(this, options);
+        if (this.id === "poke-scan-sell-helper") window.helperRoot = root;
+        return root;
+      };
       window.chrome = window.chrome || {};
       window.chrome.runtime = {
         sendMessage(message, reply) {
@@ -56,6 +71,8 @@ async function companion(page, context, requireLogin = false) {
         : options.url;
       login = false;
       await tab.goto(url, { waitUntil: "domcontentloaded" });
+      if (conditionSelector && url.includes("/items/new"))
+        await tab.evaluate(installConditionSelector, conditionSelector);
       await tab.addScriptTag({ content });
     }
     return { id };
@@ -69,7 +86,7 @@ async function companion(page, context, requireLogin = false) {
     window.chrome.runtime = {
       id,
       getURL: (name) => `http://127.0.0.1:5173/extensions/vinted/${name}`,
-      getManifest: () => ({ version: "0.2.8" }),
+      getManifest: () => ({ version: "0.2.9" }),
       onMessageExternal: { addListener() {} },
       onMessage: { addListener() {} },
       sendMessage: (_id, message, reply) => {
@@ -147,6 +164,66 @@ test("transfert complet : application → file IndexedDB → onglet Vinted → r
   expect(pending).toEqual([{ status: "filled", draft: null, fileCount: 0 }]);
   expect(await tab.evaluate(() => window.published)).toBe(0);
   await expect(page.locator(".saved")).toContainText("Prête");
+});
+
+test("transfert : garde le brouillon si l’état échoue puis termine la reprise sans doublon", async ({
+  page,
+  context,
+}) => {
+  const tabs = await companion(page, context, false, { rejected: true });
+  await readyCard(page);
+  await page
+    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
+    .click();
+  await expect(page.locator("#vinted-transfer-status")).toContainText(
+    "Annonce envoyée",
+  );
+  const tab = tabs.get(1);
+  const queue = () =>
+    page.evaluate(async () => {
+      const db = await new Promise((resolve) => {
+        const r = indexedDB.open("poke-scan-sell-vinted", 1);
+        r.onsuccess = () => resolve(r.result);
+      });
+      const records = await new Promise((resolve) => {
+        const r = db.transaction("transfers").objectStore("transfers").getAll();
+        r.onsuccess = () => resolve(r.result);
+      });
+      db.close();
+      return records.map((record) => ({
+        status: record.status,
+        hasDraft: !!record.draft,
+        files: record.files.length,
+        result: record.result,
+      }));
+    });
+  await expect
+    .poll(async () => (await queue())[0]?.status, { timeout: 8000 })
+    .toBe("partial");
+  const before = (await queue())[0];
+  expect(before.hasDraft).toBe(true);
+  expect(before.files).toBe(2);
+  expect(before.result.photosSubmitted).toBe(true);
+  expect(before.result.missing).toContain("condition");
+  await tab.evaluate(() => {
+    window.uploadEvents = 0;
+    document
+      .getElementById("images")
+      .addEventListener("change", () => window.uploadEvents++);
+    window.rejectCondition = false;
+    [...window.helperRoot.querySelectorAll("button")]
+      .find((button) => button.textContent === "Reprendre le remplissage")
+      .click();
+  });
+  await expect.poll(async () => (await queue())[0]?.status).toBe("filled");
+  const after = (await queue())[0];
+  expect(after.hasDraft).toBe(false);
+  expect(after.files).toBe(0);
+  expect(after.result.fields).toContain("condition");
+  expect(await tab.evaluate(() => window.conditionCommitted)).toBe("very-good");
+  expect(await tab.evaluate(() => window.uploadEvents)).toBe(0);
+  await expect(tab.locator("#photo-result")).toHaveText("2 photos reçues");
+  expect(await tab.evaluate(() => window.published)).toBe(0);
 });
 
 test("transfert : connexion en attente, reprise sur le même onglet et rejet d’une autre application", async ({

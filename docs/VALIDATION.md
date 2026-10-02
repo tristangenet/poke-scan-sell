@@ -1,4 +1,4 @@
-# Validation — version 0.2.8
+# Validation — version 0.2.9
 
 Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Les vérifications externes précédentes conservent leurs dates ci-dessous.
 
@@ -6,7 +6,7 @@ Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Le
 | ------------------------------------------ | ---------------------------------------------------------- |
 | Construction de production Vite            | Réussie                                                    |
 | Tests unitaires et serveur Node            | 37 réussis                                                 |
-| Parcours navigateur Chromium               | 35 réussis                                                 |
+| Parcours navigateur Chromium               | 44 réussis                                                 |
 | Interface desktop 1440 px et mobile 390 px | Vérifiée visuellement ; pas de débordement horizontal      |
 | Service catalogue TCGdex réel              | Réponse JSON observée pour base1-4 et recherche nom/numéro |
 | OCR réel Tesseract.js local                | Nom Dracaufeu et numéro 4/102 lus sur image synthétique    |
@@ -14,6 +14,10 @@ Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Le
 | Publication réelle sur Vinted              | Non exécutée ; mode manuel assisté uniquement              |
 
 ## Transfert Vinted
+
+Régression état 0.2.9 : une liste de contrôle avec titres, descriptions sans saut de ligne et boutons radio, inspirée de la capture fournie le 2 octobre, laisse l’état vide avec le script 0.2.8. Après correction, trois parcours vérifient EX → Très bon état, GD → Bon état et PL → Satisfaisant, avec prix décimal conservé, deux photos et aucun clic Publier. Deux variantes vérifient des lignes radio sans rôle option et un sélecteur à bouton. Un parcours attend le champ d’état monté après la catégorie. Un choix au titre ambigu reste vide et partiel ; un choix refusé peut être repris sans relire les photos. Le neuvième nouveau parcours utilise le worker et sa file IndexedDB réels avec les APIs Chrome simulées : l’état refusé conserve brouillon et deux originaux, la reprise confirme l’état sans nouvel événement d’envoi photo puis efface les données temporaires. Le résultat filled exige maintenant l’état confirmé dans le sélecteur.
+
+Le dernier retour utilisateur accepte la correction précédente du prix et demande le remplissage de l’état. Les titres de choix visibles sur sa capture ont été utilisés dans le formulaire de contrôle. Le DOM exact du compte connecté et son état interne n’ont pas été inspectés. Le résultat sur ce compte reste donc à vérifier après installation du compagnon 0.2.9.
 
 Régression prix 0.2.8 : six nouveaux formulaires de contrôle ont d’abord exercé le script 0.2.7. Les formats à virgule et numérique fonctionnaient ; quatre cas échouaient : format texte à point recevant `12,25`, champ monétaire normalisant cette saisie en `12`, composant avec titre « Prix » et identifiant `price-field--input` restant vide, et montant transformé entraînant un blocage plutôt qu’un résultat partiel. Les six cas passent après correction. Deux autres parcours vérifient qu’un prix antérieur d’un autre brouillon et une saisie utilisateur pendant la validation ne sont pas écrasés. La validation du prix porte sur le montant exact, les contraintes natives et `aria-invalid`, avec reprise de séparateur et restauration de la valeur antérieure en cas de refus. Les vingt parcours Vinted passent, ainsi que les tests Node et la construction. Un neuvième nouveau cas vérifie un champ sans indication de format dont la valeur affichée peut rester à virgule tandis que son état numérique utilise parseFloat ; le format par défaut à point conserve le montant exact. Ce cas passe aussi. Les quatorze autres parcours de l’application passent, soit trente-cinq parcours navigateur et trente-sept tests Node au total.
 

@@ -4,7 +4,7 @@ Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, v
 
 ![Vue d’ensemble de l’application](docs/screenshots/desktop.png)
 
-## Version 0.2.8 — mode rapide et prix Vinted
+## Version 0.2.9 — mode rapide et état Vinted
 
 Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
 
@@ -58,6 +58,8 @@ Le compagnon est associé à l’origine exacte de l’application qui a fourni 
 La version 0.2.7 remplit les champs disponibles sans attendre que titre, description et prix soient tous reconnus. Les photos peuvent débloquer des champs encore désactivés. Une attente ou un message sans réponse finit par un résultat explicite, avec diagnostic technique copiable en cas d’échec. L’application signale les anciennes extensions : **après avoir mis à jour l’application, remplacer aussi les fichiers du dossier de l’extension puis cliquer sur Recharger dans Chrome / Edge**. Recharger les deux onglets avant le prochain transfert.
 
 La version 0.2.8 adapte la saisie du prix au séparateur du champ, vérifie le montant exact après validation et essaie l’autre format si nécessaire. Un montant refusé ou transformé n’est plus annoncé comme rempli ; la valeur initiale est restaurée. Les prix déjà saisis et les modifications faites dans Vinted pendant le transfert sont conservés. Les composants avec un titre « Prix », un mode numérique ou un identifiant `price-field--input` sont aussi reconnus.
+
+La version 0.2.9 sélectionne aussi l’état de Vinted depuis l’état de la carte : M/NM/EX → « Très bon état », GD → « Bon état », LP/PL/PO → « Satisfaisant ». Les listes avec boutons radio et texte explicatif sont prises en charge. Le compagnon attend ce champ lorsqu’il apparaît après la catégorie et vérifie que le choix est affiché dans le sélecteur. Un état absent, ambigu ou refusé laisse un transfert partiel, avec reprise sans renvoyer les photos. Aucun champ d’état Vinted supplémentaire n’est demandé dans l’application.
 
 ## Activer l'analyse IA
 

@@ -1,4 +1,4 @@
-# Architecture — version 0.2.8
+# Architecture — version 0.2.9
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -37,6 +37,8 @@ Vinted : compagnon Manifest V3 dans `extensions/vinted`, téléchargé depuis l�
 Le remplissage Vinted progresse par champ, avec priorité aux identifiants et libellés associés, puis aux conteneurs portant un seul contrôle et aux placeholders reconnus. Les égalités de score et contrôles de recherche ne sont pas remplis. Les champs et photos sont recherchés pendant vingt secondes, indépendamment les uns des autres ; chaque message a un délai maximal. Le worker conserve un point de reprise dès l’envoi des photos au formulaire pour éviter un doublon si un champ échoue ensuite. Les journaux de progression et le diagnostic copiable ne contiennent pas le contenu de l’annonce ni les photos. L’application exige une version de compagnon au moins égale à celle qu’elle distribue, avec protocole compatible ; l’identifiant d’extension reste stable.
 
 La saisie du prix distingue champs numériques et champs monétaires texte. Le séparateur est choisi selon le type, l’indication du champ et son motif de validation ; le point est le format par défaut. Deux formats au maximum sont essayés, avec validation après perte de focus et comparaison du montant exact. Une valeur transformée ou invalidée par le composant n’est pas comptée comme remplie. La valeur antérieure est restaurée en cas de refus ; les événements de saisie utilisateur interrompent la reprise. Les diagnostics indiquent le mode numérique et les échecs de validation sans conserver le montant saisi.
+
+Le sélecteur d’état est recherché jusqu’à la fin du délai de montage, même si le texte et les photos sont déjà transmis. Les options sont rapprochées par leur titre, indépendamment de leur description ; les cibles radio imbriquées sont regroupées pour un seul choix, et deux options distinctes au même titre restent ambiguës. Le menu lié par aria-controls/aria-owns est privilégié lorsqu’il existe. Le choix doit être confirmé dans la valeur ou le libellé du sélecteur après les événements, y compris après un remplacement du contrôle. Un résultat filled exige désormais aussi l’état confirmé ; un échec conserve le brouillon, les originaux temporaires et le point de reprise photos.
 
 ## Limites
 

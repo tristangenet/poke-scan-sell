@@ -2,7 +2,7 @@
 
 ## Installer une seule fois
 
-1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.2.8.
+1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.2.9.
 2. Préparer et valider une carte, puis ouvrir **Activer le remplissage Vinted** dans l’annonce.
 3. Cliquer sur **Télécharger l’extension Chrome / Edge**, puis décompresser le ZIP.
 4. Ouvrir `chrome://extensions` ou `edge://extensions` et activer le **mode développeur**.
@@ -15,9 +15,9 @@ Le téléchargement associe le compagnon uniquement à l’adresse exacte de cet
 
 Mettre à jour l’application avec `git pull` ne change pas les fichiers de l’extension chargée dans Chrome / Edge.
 
-1. Télécharger à nouveau le ZIP depuis l’application v0.2.8 et le décompresser.
+1. Télécharger à nouveau le ZIP depuis l’application v0.2.9 et le décompresser.
 2. Remplacer les fichiers du dossier `poke-scan-sell-vinted` déjà chargé par ceux du nouveau ZIP.
-3. Dans `chrome://extensions` ou `edge://extensions`, cliquer sur la flèche circulaire **Recharger** de Poke Scan Sell — Vinted. La version doit être **0.2.8**.
+3. Dans `chrome://extensions` ou `edge://extensions`, cliquer sur la flèche circulaire **Recharger** de Poke Scan Sell — Vinted. La version doit être **0.2.9**.
 4. Recharger les onglets de l’application et de Vinted, puis relancer le transfert depuis l’application.
 
 L’application indique désormais la version connectée et propose la mise à jour si le compagnon est trop ancien. Le panneau dans Vinted affiche aussi sa version.
@@ -30,7 +30,15 @@ Le remplissage se fait dès que chaque champ est reconnu. Les photos peuvent êt
 
 Le prix utilise le point décimal par défaut, ou la virgule indiquée par le champ. Pour un champ numérique natif, la valeur utilise toujours un point. Après les événements de saisie et de validation, le compagnon compare le montant exact et vérifie les contraintes natives ainsi que `aria-invalid`. Si le premier format est refusé, l’autre est essayé. Aucun arrondi à l’euro ni suppression des centimes n’est accepté. En cas d’échec, la valeur antérieure est restaurée et le résultat reste partiel. Une modification faite par le vendeur dans le champ interrompt ces nouvelles tentatives et est conservée.
 
-La catégorie « Cartes Pokémon » ou « Cartes à collectionner » et l’état sont sélectionnés lorsqu’un libellé reconnu est disponible. Les états M/NM/EX sont rapprochés de « Très bon état », GD de « Bon état » et les états usés de « Satisfaisant » ou « État correct ». L’état détaillé de la carte reste dans la description. Aucun libellé ou identifiant inconnu n’est choisi automatiquement.
+La catégorie « Cartes Pokémon » ou « Cartes à collectionner » et l’état sont sélectionnés lorsqu’un libellé reconnu est disponible. L’état provient du champ déjà confirmé dans l’application, sans choix supplémentaire :
+
+| État de la carte | Choix dans Vinted                                             |
+| ---------------- | ------------------------------------------------------------- |
+| M, NM, EX        | Très bon état                                                 |
+| GD               | Bon état                                                      |
+| LP, PL, PO       | Satisfaisant (ou État correct si c’est le libellé disponible) |
+
+Le compagnon distingue le titre du choix de son texte explicatif dans les listes à boutons radio. Il prend aussi en charge les sélecteurs natifs et les listes d’options. Il attend l’apparition du champ après la catégorie, puis vérifie que le choix est affiché dans le sélecteur. Un bouton radio coché seul ne suffit pas à confirmer le transfert. Si l’état est absent, ambigu ou refusé, le résultat reste partiel et le brouillon est conservé pour reprendre sans renvoyer les photos. L’état détaillé de la carte reste dans la description. Aucun libellé ou identifiant inconnu n’est choisi automatiquement.
 
 Un message dans Vinted indique le résultat et les champs à vérifier ou compléter. Contrôler les photos une fois leur chargement terminé, les attributs de la catégorie et le format de colis, puis cliquer sur **Publier**. Le compagnon ne soumet pas l’annonce et ne déclare pas automatiquement sa publication.
 
@@ -41,7 +49,7 @@ Un message dans Vinted indique le résultat et les champs à vérifier ou compl�
 - L’annonce a changé dans l’application : la valider et actualiser son texte avant de transférer à nouveau.
 - Le transfert a expiré ou l’onglet a été fermé : relancer depuis l’application.
 - Le compagnon n’est pas reconnu : recharger l’application et vérifier que le dossier a été chargé dans le même navigateur, pour cette même adresse.
-- Un champ manque encore avec le compagnon 0.2.8 : cliquer sur **Copier le diagnostic** dans le panneau Vinted. Le rapport contient la version, les champs reconnus, les identifiants techniques des contrôles et leurs indicateurs de validation, sans valeurs de l’annonce, photos ni informations de connexion. Il aide à adapter les repères. Si la copie est refusée, une zone de texte permet de copier ce rapport manuellement.
+- Un champ manque encore avec le compagnon 0.2.9 : cliquer sur **Copier le diagnostic** dans le panneau Vinted. Le rapport contient la version, les champs reconnus, les identifiants techniques des contrôles et leurs indicateurs de validation, sans valeurs de l’annonce, photos ni informations de connexion. Il aide à adapter les repères. Si la copie est refusée, une zone de texte permet de copier ce rapport manuellement.
 
 Le ZIP des photos et les boutons copier restent disponibles pour un transfert manuel.
 
@@ -50,3 +58,5 @@ Le ZIP des photos et les boutons copier restent disponibles pour un transfert ma
 Le texte, le prix, les photos et la file de transfert ont été testés sur des formulaires de contrôle, avec les APIs de l’extension simulées. Le blocage de la version 0.2.6 a été reproduit avec des champs désactivés jusqu’à l’ajout des photos : aucun texte ni photo n’était transféré. Le même formulaire reçoit les trois champs et les deux originaux avec 0.2.7. Ce test ne confirme pas la structure exacte du formulaire utilisateur. Le chargement complet du compagnon dans Chrome et le formulaire réel d’un compte Vinted connecté restent à valider. Des changements de structure ou de champs sur Vinted peuvent demander une adaptation des repères du formulaire.
 
 Le retour utilisateur du 2 octobre indique que le transfert fonctionne mais que le prix reste à remplir. La structure de ce champ précis n’a pas été fournie. Les tests 0.2.8 reproduisent et corrigent un format à point recevant une virgule, un champ transformant `12,25` en `12` et un conteneur de prix non reconnu. Ils vérifient les formats à point et virgule, un champ numérique, une reprise de format, le refus d’un montant incorrect et la conservation des saisies existantes ou faites pendant le transfert. Ces cas sont contrôlés ; le remplissage du prix sur le compte utilisateur reste à confirmer.
+
+La version 0.2.9 a été testée sur une liste de contrôle reprenant les titres et descriptions visibles sur la capture utilisateur, ainsi que sur des variantes à boutons, lignes radio et champ d’état monté après la catégorie. Les tests vérifient l’état retenu par le composant, les trois correspondances d’état, le refus d’un choix ambigu et la reprise d’une sélection rejetée sans doublon de photos. Le DOM exact du formulaire du compte utilisateur n’a pas été observé ; la capture seule ne permet pas cette vérification.
