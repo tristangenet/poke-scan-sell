@@ -14,7 +14,7 @@ Cliquez sur **Préparer ma carte**. Le nom et le numéro sont lus et rapprochés
 
 Vérifiez le nom et le numéro remplis, puis choisissez l’état de la carte et votre prix. Si la lecture est partielle, seul le champ manquant est à compléter. L’extension et la variante sont facultatives.
 
-Si une tendance Cardmarket est disponible, vous pouvez la choisir comme point de départ. Elle ne représente pas un prix garanti selon l’état. Le lien **Comparer les annonces Vinted** permet de consulter les offres ; les comparables détaillés restent accessibles dans **Options avancées**.
+Si une tendance Cardmarket est disponible, vous pouvez la choisir comme point de départ. Elle ne représente pas un prix garanti selon l’état. Les liens **Comparer les annonces Vinted** et **Comparer les annonces Cardmarket** permettent de consulter les offres dans un nouvel onglet. Cardmarket recherche le nom et le numéro de collection (par exemple « Dracaufeu 010 » pour « 010/078 ») ; les comparables détaillés restent accessibles dans **Options avancées**.
 
 Cliquez sur **Valider ma carte et créer l’annonce**. Les champs incomplets sont signalés au même endroit. Cette validation confirme que vous avez examiné les deux faces et les défauts.
 

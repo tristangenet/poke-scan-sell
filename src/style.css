@@ -1342,6 +1342,15 @@ input[type="checkbox"] {
   width: 13px;
   height: 13px;
 }
+.price-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+.price-links .inline-link {
+  min-width: 0;
+  max-width: 100%;
+}
 .actions {
   display: flex;
   gap: 10px;

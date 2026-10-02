@@ -1,4 +1,12 @@
-# Validation — version 0.3.0
+# Validation — version 0.3.1
+
+## Liens de comparaison Cardmarket — 0.3.1
+
+Vérifications exécutées le 2 octobre 2026 : construction Vite réussie, 37 tests Node et les sept parcours navigateur de l’interface réussis. Contrôle complémentaire dans Chromium avec une carte synthétique « Dracaufeu 010/078 — Pokémon GO » : lien Cardmarket présent à côté de Vinted, recherche « Dracaufeu 010 », ouverture prévue dans un nouvel onglet avec `noopener noreferrer`, recherche Vinted conservée. Après modification en « Évoli TG01/TG30 », la recherche devient « Évoli TG01 » dans la vérification et les options avancées. Aucun débordement à 320, 390 et 1440 pixels, aucune erreur JavaScript ; panneau du prix inspecté visuellement à 320 pixels.
+
+Le [guide officiel Cardmarket](https://help.cardmarket.com/fr/finding-and-listing-pokemon-cards) indique que la recherche 2.0 accepte le nom suivi du numéro de collection, y compris séparés par un espace. Le lien et ses paramètres ont été vérifiés dans l’application ; la page de résultats Cardmarket n’a pas pu être consultée par l’outil de navigation. Aucun résultat externe ni prix n’a été déduit de ce contrôle.
+
+## Suite de référence — 0.3.0
 
 Construction, tests Node et parcours navigateur exécutés le 2 octobre 2026. Les vérifications externes précédentes conservent leurs dates ci-dessous.
 

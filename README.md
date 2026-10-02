@@ -4,7 +4,9 @@ De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses inf
 
 ![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
 
-## Version 0.3.0 — une interface plus simple
+## Version 0.3.1 — une interface plus simple
+
+La version 0.3.1 ajoute **Comparer les annonces Cardmarket** à côté de Vinted dans la vérification du prix, et un lien de recherche dans les options avancées. La recherche Cardmarket utilise le nom et le numéro de collection avant la barre oblique (par exemple « Dracaufeu 010 » pour « 010/078 »).
 
 L’application propose un parcours en **trois écrans : Photos → Vérification → Annonce**, en français, sur ordinateur et téléphone.
 
@@ -62,7 +64,7 @@ git pull --ff-only origin main
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.3.0**.
+Actualiser l’onglet : le pied de page doit afficher **v0.3.1**.
 
 ## Remplir Vinted
 

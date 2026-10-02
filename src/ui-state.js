@@ -5,6 +5,18 @@ export const PRODUCT = {
   tagline: "De la carte à l’annonce.",
 };
 
+export function cardmarketSearchUrl(card) {
+  const query = [
+    String(card.name || "").trim(),
+    String(card.number || "")
+      .split("/")[0]
+      .trim(),
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return `https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=${encodeURIComponent(query)}&searchMode=v2`;
+}
+
 export const CONDITION_LABELS = {
   NM: "Quasi neuf — Near Mint",
   EX: "Excellent — quelques marques légères",
