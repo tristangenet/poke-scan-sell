@@ -2,7 +2,7 @@
 
 ## Installer une seule fois
 
-1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.2.9.
+1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.3.0. Le compagnon reste en version 0.2.9 ; cette refonte d’interface ne nécessite pas de réinstallation si cette version est déjà associée à la même adresse.
 2. Préparer et valider une carte, puis ouvrir **Activer le remplissage Vinted** dans l’annonce.
 3. Cliquer sur **Télécharger l’extension Chrome / Edge**, puis décompresser le ZIP.
 4. Ouvrir `chrome://extensions` ou `edge://extensions` et activer le **mode développeur**.
@@ -15,7 +15,7 @@ Le téléchargement associe le compagnon uniquement à l’adresse exacte de cet
 
 Mettre à jour l’application avec `git pull` ne change pas les fichiers de l’extension chargée dans Chrome / Edge.
 
-1. Télécharger à nouveau le ZIP depuis l’application v0.2.9 et le décompresser.
+1. Télécharger à nouveau le ZIP depuis l’application et le décompresser.
 2. Remplacer les fichiers du dossier `poke-scan-sell-vinted` déjà chargé par ceux du nouveau ZIP.
 3. Dans `chrome://extensions` ou `edge://extensions`, cliquer sur la flèche circulaire **Recharger** de Poke Scan Sell — Vinted. La version doit être **0.2.9**.
 4. Recharger les onglets de l’application et de Vinted, puis relancer le transfert depuis l’application.

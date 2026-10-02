@@ -463,11 +463,22 @@ test("application : un clic transmet texte et photos, puis une modification bloq
   );
   expect(actual[0].draft.photos.map((p) => p.side)).toEqual(["front", "back"]);
   expect(actual[1].data).toBe(data);
+  await page.getByRole("button", { name: "Modifier les informations" }).click();
   await page.locator('[data-field="price"]').fill("15");
   await page.locator('[data-field="price"]').blur();
   await expect(
+    page.getByRole("button", { name: "3 Annonce", exact: true }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Options avancées" }).click();
+  await page.getByRole("button", { name: "5 Annonce" }).click();
+  await expect(
     page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
   ).toBeDisabled();
+  expect(
+    await page.evaluate(
+      () => window.sent.filter((m) => m.type === "prepare").length,
+    ),
+  ).toBe(1);
 });
 
 test("Vinted : libellés de conteneur, noms entre crochets et prix avec placeholder, sans toucher la recherche", async ({

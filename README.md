@@ -1,34 +1,40 @@
 # Poke Scan Sell
 
-Votre atelier de mise en vente de cartes Pokémon : photographier, identifier, vérifier, estimer et préparer les annonces.
+De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses informations et préparez sa vente sur Vinted.
 
-![Vue d’ensemble de l’application](docs/screenshots/desktop.png)
+![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
 
-## Version 0.2.9 — mode rapide et état Vinted
+## Version 0.3.0 — une interface plus simple
 
-Application responsive en français, utilisable sur téléphone et ordinateur. Inventaire conservé **dans le navigateur**, sans compte utilisateur ni synchronisation cloud.
+L’application propose un parcours en **trois écrans : Photos → Vérification → Annonce**, en français, sur ordinateur et téléphone.
 
-Le mode rapide est affiché par défaut : **recto + verso → Préparer ma carte → vérifier → Valider et créer l’annonce**. Une seule préparation enchaîne l’OCR (ou l’IA optionnelle), la recherche catalogue et le chargement des indicateurs de marché. La référence est remplie automatiquement en croisant le nom, le numéro (complet, isolé ou promo) et le texte de l’extension lorsqu’il est lisible. Cela fonctionne aussi avec le bouton OCR des options avancées. Le mode rapide ne demande plus de sélectionner une carte dans une liste. Le nom et le numéro suffisent pour préparer l’annonce : si plusieurs éditions correspondent, ces informations sont conservées sans choisir de fiche catalogue au hasard. L’extension et la variante sont facultatives, repliées dans les détails de la vérification finale ; leur absence ne bloque pas la génération. Une nouvelle photo reste utile lorsque le nom ou le numéro n’a pas été lu. Les symboles graphiques ne sont pas reconnus par l’OCR local ; l’analyse IA configurée ou une correction manuelle peut rester nécessaire. La variante unique du catalogue est préremplie, toujours à vérifier.
+1. **Photos** : ajoutez le recto et le verso, puis cliquez sur **Préparer ma carte**. L’OCR lit le nom et le numéro et recherche la référence dans le catalogue.
+2. **Vérification** : contrôlez les informations, choisissez l’état et le prix. L’extension et la variante sont facultatives, dans un volet replié. Une validation prépare l’annonce.
+3. **Annonce** : relisez l’aperçu, ajustez le texte si nécessaire et cliquez sur **Remplir mon annonce sur Vinted**. Le compagnon envoie le texte, les originaux, le prix et l’état. Vous vérifiez le formulaire Vinted avant de publier.
 
-Le scan local analyse une copie agrandie du recto, privilégie le titre principal en haut (selon la taille des lignes, en écartant les mentions de pré-évolution) et le numéro en bas, puis tente automatiquement des lectures ciblées et une lecture avec contraste renforcé si nécessaire. Jusqu’à huit lectures sont possibles, avec arrêt dès que nom et numéro concordent avec une référence. Une faute d’une lettre dans un nom d’au moins cinq caractères peut être rapprochée du catalogue seulement si le numéro concorde et si le nom est univoque. Le nom déjà lu n’est plus perdu lorsqu’un numéro ne correspond pas. Si l’OCR omet le séparateur du numéro (par exemple 4102), une référence peut être reconstituée uniquement lorsqu’une combinaison unique de nom, numéro et total du catalogue correspond aux caractères lus en bas ; les années de copyright sont exclues. Les totaux TG/SV sont conservés tels qu’ils sont imprimés. Si la lecture reste partielle, le message indique le champ manquant et le texte extrait est consultable ; un échec de rapprochement catalogue n’est plus présenté comme un reflet sur la photo. Le scan OCR lit du texte ; une véritable analyse visuelle IA du nom, du numéro et de l’état reste optionnelle et nécessite un serveur configuré. Une identité lue par l’IA est conservée même sans fiche catalogue.
+L’accueil explique les étapes et propose de reprendre un brouillon. **Mes cartes** regroupe les cartes à préparer, prêtes, en vente, vendues et archivées, avec recherche sans distinction d’accents et tri. **Paramètres** regroupe le compagnon Vinted et les sauvegardes. **Aide** explique les étapes et les questions fréquentes.
 
-La reconnaissance n’est plus limitée à 24 références. Le nom et le numéro lus sont conservés même si une fiche manque. Les extensions sont consultées pour cibler la référence avant de charger la fiche détaillée. Les erreurs temporaires sont réessayées automatiquement ; les données sont mises en cache cinq minutes et les requêtes de secours limitées à trois simultanément. Si l’identité est établie par les données de carte et d’extension, une fiche détaillée indisponible ne bloque pas son remplissage ; le prix absent reste à choisir, les variantes restent facultatives.
+La saisie est enregistrée automatiquement après une courte pause et à la sortie d’un champ. Le champ actif et les volets ouverts restent en place. Le rechargement reprend la page et la carte en cours. Les erreurs apparaissent à côté des champs à compléter. Les réglages techniques, outils manuels et options avancées sont accessibles dans des volets secondaires.
 
-La tendance Cardmarket peut être choisie comme point de départ en un clic lorsqu’une référence catalogue unique est identifiée, sans saisir trois comparables. Sans référence unique, aucun prix catalogue n’est sélectionné automatiquement ; le vendeur peut choisir son prix et préparer l’annonce sans édition. Elle reste un agrégat général, pas un prix de vente garanti ni une estimation selon état. L’état peut être proposé par l’IA configurée. Une seule validation confirme identité et état puis génère le texte. Le seul champ d’état est « État de la carte », utilisé pour l’estimation et la description. Le formulaire, la validation et l’export ne demandent plus de libellé d’état Vinted ni d’emballage. Les options avancées conservent le parcours détaillé et les comparables.
+Cette version conserve les cartes et sauvegardes existantes. **Le compagnon Vinted reste en version 0.2.9** : aucune réinstallation n’est nécessaire si cette version est déjà chargée et associée à la même adresse.
 
-Fonctionnalités livrées :
+## Ce qui fonctionne
 
-- Capture/import recto, verso et détails (JPEG/PNG/WebP).
-- Lecture OCR locale avec Tesseract.js et recherche dans le catalogue TCGdex.
-- Nom et numéro remplis automatiquement ; extension et variante facultatives ; correction manuelle.
-- Évaluation guidée de l'état et **analyse IA optionnelle** du recto/verso via un serveur OpenAI.
-- Tendances Cardmarket relayées par TCGdex, clairement distinguées d'une estimation selon état.
-- Comparables saisis et confirmés par le vendeur, calcul de fourchette et stratégies de prix.
-- Annonces modifiables, copier-coller et dossier ZIP avec les photos originales.
-- Remplissage Vinted par un compagnon Chrome / Edge : titre, description, prix, photos originales, catégorie et état lorsqu’ils sont reconnus ; suivi manuel de la publication/vente.
-- Sauvegarde JSON, restauration sans écrasement, recherche, filtres et archivage.
+- Import/capture recto, verso et détails, ou glisser-déposer sur ordinateur ; originaux JPEG/PNG/WebP conservés.
+- OCR Tesseract.js exécuté dans le navigateur et recherche TCGdex avec reprises automatiques.
+- Nom et numéro préremplis quand la lecture permet de les identifier ; corrections manuelles possibles.
+- Extension et variante facultatives. Une édition ambiguë conserve le nom et le numéro sans attribuer le prix d’une autre édition.
+- Analyse IA optionnelle du recto/verso, via un serveur configuré, proposant l’identité, l’état et les défauts.
+- Tendance Cardmarket via TCGdex quand une référence unique est trouvée ; comparables vérifiés et estimation dans les options avancées.
+- Annonce modifiable et transfert Vinted par le compagnon Chrome / Edge ; copier-coller et ZIP en complément.
+- Collection locale, reprise des brouillons, archivage, suivi manuel des publications/ventes, sauvegarde JSON et restauration sans écrasement.
+- Navigation mobile avec libellés, accès au clavier, erreurs associées aux champs et mouvements réduits selon les préférences du navigateur.
 
-**Le remplissage du formulaire Vinted est développé via le compagnon Chrome / Edge, à installer une fois depuis l’application.** Il a été testé sur des formulaires de contrôle ; la validation du formulaire réel avec un compte connecté reste à effectuer. Les champs non reconnus sont signalés. La collecte automatique des comparables par état et la publication automatique restent indisponibles. Aucun prix ou résultat de publication n’est simulé.
+Les cartes sont conservées **dans ce navigateur, sur cet appareil**, sans compte ni synchronisation cloud. Pensez à exporter une sauvegarde avant de changer d’appareil ou d’effacer les données du site.
+
+La tendance Cardmarket est un indicateur général, sans filtrage garanti par état, langue ou variante. Ce n’est pas un prix de vente garanti. L’estimation selon l’état utilise les comparables renseignés et vérifiés par le vendeur. La collecte automatique de ces comparables reste à développer.
+
+Sur téléphone, la capture, la préparation et les exports fonctionnent. Le remplissage automatique Vinted utilise le compagnon **Chrome / Edge sur ordinateur**. La publication finale reste effectuée sur Vinted par le vendeur.
 
 ## Démarrer
 
@@ -39,7 +45,7 @@ npm ci
 npm run dev
 ```
 
-Ouvrir http://localhost:5173. Le catalogue nécessite une connexion Internet. Les modèles OCR sont inclus après npm ci.
+Ouvrir http://localhost:5173. Le catalogue nécessite une connexion Internet. Les modèles OCR sont inclus après `npm ci`.
 
 Pour servir la version construite :
 
@@ -47,23 +53,30 @@ Pour servir la version construite :
 npm start
 ```
 
-Ouvrir http://localhost:3001. L'application fonctionne sans clé API en mode OCR et saisie guidée.
+Ouvrir http://localhost:3001. L’application fonctionne sans clé API en mode OCR.
+
+Dans un Codespace, arrêter le serveur avec `Ctrl+C`, puis mettre à jour et relancer :
+
+```bash
+git pull --ff-only origin main
+HOST=0.0.0.0 npm start
+```
+
+Actualiser l’onglet : le pied de page doit afficher **v0.3.0**.
 
 ## Remplir Vinted
 
-Après validation de votre carte, cliquez sur **Remplir mon annonce sur Vinted**. À la première utilisation, ouvrez **Activer le remplissage Vinted**, téléchargez et décompressez l’extension, puis chargez le dossier dans `chrome://extensions` ou `edge://extensions` avec le mode développeur activé. Rechargez l’application ; le même bouton enverra ensuite le texte corrigé, le prix et les photos.
+À la première utilisation, ouvrir **Activer le remplissage Vinted**, télécharger et décompresser le ZIP, puis charger le dossier dans `chrome://extensions` ou `edge://extensions` avec le mode développeur activé. Recharger l’application. Le bouton **Remplir mon annonce sur Vinted** transmet ensuite votre annonce et ses photos.
 
-Le compagnon est associé à l’origine exacte de l’application qui a fourni le ZIP. Une autre adresse nécessite un nouveau téléchargement de l’extension. Il attend la connexion sur Vinted, conserve un brouillon existant au lieu de l’écraser, signale les champs restants et laisse le clic **Publier** au vendeur. Voir [le guide Vinted](docs/VINTED.md).
+Le compagnon est associé à l’origine exacte de l’application qui a fourni le ZIP. Une autre adresse nécessite un nouveau téléchargement. Il attend la connexion sur Vinted, conserve un brouillon préexistant, signale les champs restants et laisse le clic **Publier** au vendeur. Voir [le guide Vinted](docs/VINTED.md).
 
-La version 0.2.7 remplit les champs disponibles sans attendre que titre, description et prix soient tous reconnus. Les photos peuvent débloquer des champs encore désactivés. Une attente ou un message sans réponse finit par un résultat explicite, avec diagnostic technique copiable en cas d’échec. L’application signale les anciennes extensions : **après avoir mis à jour l’application, remplacer aussi les fichiers du dossier de l’extension puis cliquer sur Recharger dans Chrome / Edge**. Recharger les deux onglets avant le prochain transfert.
+L’état est choisi depuis celui de la carte : M/NM/EX → « Très bon état », GD → « Bon état », LP/PL/PO → « Satisfaisant ». Aucun deuxième champ d’état ni champ d’emballage n’est demandé. Les tests vérifient le prix exact, l’état sélectionné, les originaux et les reprises sans doublon sur des formulaires de contrôle ; ils ne publient aucune annonce réelle.
 
-La version 0.2.8 adapte la saisie du prix au séparateur du champ, vérifie le montant exact après validation et essaie l’autre format si nécessaire. Un montant refusé ou transformé n’est plus annoncé comme rempli ; la valeur initiale est restaurée. Les prix déjà saisis et les modifications faites dans Vinted pendant le transfert sont conservés. Les composants avec un titre « Prix », un mode numérique ou un identifiant `price-field--input` sont aussi reconnus.
+## Analyse IA et future offre commerciale
 
-La version 0.2.9 sélectionne aussi l’état de Vinted depuis l’état de la carte : M/NM/EX → « Très bon état », GD → « Bon état », LP/PL/PO → « Satisfaisant ». Les listes avec boutons radio et texte explicatif sont prises en charge. Le compagnon attend ce champ lorsqu’il apparaît après la catégorie et vérifie que le choix est affiché dans le sélecteur. Un état absent, ambigu ou refusé laisse un transfert partiel, avec reprise sans renvoyer les photos. Aucun champ d’état Vinted supplémentaire n’est demandé dans l’application.
+Pour configurer l’analyse IA, suivre [les instructions d’installation](docs/INSTALLATION.md). La clé API reste sur le serveur ; le code d’accès à l’instance se renseigne dans le volet IA des paramètres. L’utilisateur choisit l’analyse IA avant l’envoi des photos. Les propositions restent à vérifier.
 
-## Activer l'analyse IA
-
-Suivre [les instructions d'installation](docs/INSTALLATION.md). La clé API reste côté serveur ; un code d'accès protège les appels. Aucune photo n'est envoyée sans confirmation dans l'interface. Les suggestions d'identité et d'état doivent être vérifiées par le vendeur.
+L’interface est prête à accueillir une offre publique. Les comptes clients, synchronisation, paiement unique ou abonnement et contrôle des droits côté serveur constituent une évolution distincte. Aucun abonnement, quota commercial ni paiement fictif n’est affiché. Voir [la préparation d’une offre commerciale](docs/OFFRE_COMMERCIALE.md).
 
 ## Vérifier
 
@@ -74,14 +87,16 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Tests de calcul, de refus des données incompatibles, du serveur, et parcours navigateur complet. Voir le [rapport de validation](docs/VALIDATION.md) pour les limites des vérifications.
+Un Chromium déjà disponible peut être indiqué via `TEST_BROWSER_PATH`. Voir [le rapport de validation](docs/VALIDATION.md) pour les résultats et limites.
 
 ## Documentation
 
+- [Guide d’utilisation](docs/UTILISATION.md)
 - [Installation et configuration](docs/INSTALLATION.md)
 - [Architecture et données](docs/ARCHITECTURE.md)
+- [Préparer une offre commerciale](docs/OFFRE_COMMERCIALE.md)
 - [Cahier des charges](docs/CAHIER_DES_CHARGES.md)
-- [Feuille de route et état réel](docs/ROADMAP.md)
+- [Feuille de route](docs/ROADMAP.md)
 - [Tâches GitHub](https://github.com/tristangenet/poke-scan-sell/issues)
 
-Projet indépendant, non affilié à Pokémon, Vinted, Cardmarket ou TCGdex. Ne jamais committer clés, cookies, photos personnelles ou sauvegardes d'inventaire.
+Projet indépendant, non affilié à Pokémon, Vinted, Cardmarket ou TCGdex. Les captures de documentation utilisant des cartes contiennent uniquement des données et photos synthétiques de démonstration.

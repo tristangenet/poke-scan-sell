@@ -50,6 +50,17 @@ Le code d'accès est destiné à une instance personnelle. Pour ouvrir le servic
 
 Sur smartphone, l'accès caméra et le presse-papiers peuvent nécessiter HTTPS. L'import de photos fonctionne avec le sélecteur du système. Le champ de capture utilise la caméra arrière lorsque le navigateur le permet.
 
+## Mettre à jour la version 0.3.0
+
+Arrêter le serveur en cours avec `Ctrl+C`, puis, dans le dépôt :
+
+```bash
+git pull --ff-only origin main
+HOST=0.0.0.0 npm start
+```
+
+Actualiser l’application et vérifier **v0.3.0** dans le pied de page. La version du compagnon reste **0.2.9** : si elle est déjà installée pour la même adresse, aucune réinstallation n’est nécessaire pour cette refonte. La reconnaissance, les originaux et le transfert utilisent les mêmes modules. Les cartes existantes restent dans le stockage du navigateur.
+
 ## Données et sauvegardes
 
 Indexer les cartes avec IndexedDB ; aucune carte n'est envoyée dans un cloud de stockage. Exporter régulièrement depuis Données & services. Effacer les données du navigateur ou utiliser un autre navigateur ne conserve pas l'inventaire. Import JSON version 1 limité à 50 Mo / 500 cartes, six photos par carte. Les cartes importées prennent de nouveaux identifiants.

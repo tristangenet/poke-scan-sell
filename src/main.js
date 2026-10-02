@@ -32,50 +32,48 @@ import {
   getVintedStatus,
   downloadVintedExtension,
 } from "./vinted-transfer.js";
+import {
+  cardStage,
+  filterCards,
+  reviewIssues,
+  listingReady,
+} from "./ui-state.js";
+import { quickView } from "./quick-view.js";
+import {
+  icon,
+  esc,
+  badge,
+  btn,
+  input,
+  select,
+  cardVisual,
+  collectionGrid,
+  layout,
+  dashboardView,
+  inventoryView,
+  settingsView,
+  helpView,
+} from "./interface.js";
 const app = document.querySelector("#app");
 let cards = [],
   active = null,
   view = "dashboard",
   step = 0,
   quickMode = true,
+  quickStage = "photos",
+  reviewErrors = {},
   quickMessage = "",
   candidates = [],
   busy = false,
   query = "",
-  statusFilter = "all";
+  statusFilter = "all",
+  inventorySort = "recent";
+let fieldSaveTimer = null;
+let pendingSaves = 0;
+let saveStatusMessage = "Sur cet appareil";
+let saveStatusError = false;
 let vintedHelper = { connected: false, ready: false, version: "" };
 const steps = ["Photos", "Identification", "État", "Estimation", "Annonce"];
-const icons = {
-  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-  scan: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5M7 12h10"/>',
-  stack: '<path d="m12 3 10 5-10 5L2 8zM2 12l10 5 10-5M2 16l10 5 10-5"/>',
-  arrow: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  download: '<path d="M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6"/>',
-  check: '<path d="m5 12 4 4L19 6"/>',
-  camera:
-    '<rect x="3" y="6" width="18" height="15" rx="3"/><path d="m8 6 2-3h4l2 3"/><circle cx="12" cy="13" r="4"/>',
-  settings:
-    '<circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/>',
-};
-const icon = (n) =>
-  `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[n] || icons.stack}</svg>`;
-const esc = (s) =>
-  String(s ?? "").replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        c
-      ],
-  );
-const badge = (s) =>
-  `<span class="badge ${s === "Publiée" || s === "Vendue" ? "green" : ""}">${esc(s)}</span>`;
-const btn = (label, action, cls = "primary", extra = "") =>
-  `<button class="${cls}" data-action="${action}" ${extra}>${label}</button>`;
-const input = (label, field, value, type = "text", extra = "") =>
-  `<label class="field">${label}<input data-field="${field}" type="${type}" value="${esc(value)}" ${extra}></label>`;
-const select = (label, field, value, options) =>
-  `<label class="field">${label}<select data-field="${field}">${options.map(([v, l]) => `<option value="${esc(v)}" ${v === value ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>`;
 function toast(message, error = false) {
   const t = document.querySelector("#toast");
   t.textContent = message;
@@ -85,128 +83,117 @@ function toast(message, error = false) {
 }
 async function persist() {
   if (!active) return;
-  active.updatedAt = new Date().toISOString();
-  await saveCard(active);
-  const i = cards.findIndex((c) => c.id === active.id);
-  if (i < 0) cards.unshift(active);
-  else cards[i] = active;
+  const card = active;
+  card.updatedAt = new Date().toISOString();
+  pendingSaves++;
+  setSaveStatus("Enregistrement…");
+  try {
+    await saveCard(card);
+  } catch (error) {
+    setSaveStatus("Sauvegarde impossible", true);
+    throw error;
+  } finally {
+    pendingSaves--;
+  }
+  const i = cards.findIndex((c) => c.id === card.id);
+  if (i < 0) cards.unshift(card);
+  else cards[i] = card;
+  setSaveStatus(
+    pendingSaves || fieldSaveTimer
+      ? "Enregistrement…"
+      : "Enregistré sur cet appareil",
+  );
+}
+function setSaveStatus(message, error = false) {
+  saveStatusMessage = message;
+  saveStatusError = error;
+  const status = document.querySelector("#save-status");
+  if (status) {
+    status.textContent = message;
+    status.classList.toggle("save-error", error);
+  }
 }
 function log(action) {
   active.history.push({ at: new Date().toISOString(), action });
 }
 function shell(content) {
-  app.innerHTML = `<aside class="sidebar"><a class="brand" href="#" data-action="dashboard"><img src="/icon.svg" alt=""><span>Poke<span class="brand-light"> Scan Sell</span><small>VOTRE ATELIER DE CARTES</small></span></a><div class="nav-label">ESPACE PERSONNEL</div><nav>${[
-    ["dashboard", "grid", "Vue d’ensemble"],
-    ["new", "scan", "Scanner une carte"],
-    ["inventory", "stack", "Ma collection"],
-    ["settings", "settings", "Données & services"],
-  ]
-    .map(([a, i, l]) =>
-      btn(
-        icon(i) + l,
-        a,
-        `nav-item ${view === a || (a === "new" && view === "editor") ? "selected" : ""}`,
-      ),
-    )
-    .join(
-      "",
-    )}</nav><div class="sidebar-bottom"><span class="dot"></span> Espace local<div>Vos photos restent dans ce navigateur.<br>Exportez régulièrement une sauvegarde.</div>${btn(icon("download") + " Sauvegarder", "export", "sidebar-export")}</div></aside><div class="workspace"><header class="topbar"><div><span class="breadcrumb">MON ATELIER</span><span class="top-path"> / ${view === "editor" ? "Nouvelle annonce" : view === "inventory" ? "Collection" : view === "settings" ? "Paramètres" : "Vue d’ensemble"}</span></div><div class="local-pill"><span class="dot"></span> Stockage local <span class="avatar">T</span></div></header><main>${content}</main><footer>Poke Scan Sell · v${esc(packageInfo.version)} <span>Un outil indépendant pour votre collection.</span></footer></div>`;
-}
-function cardVisual(c) {
-  const photo = c.photos.find((p) => p.side === "front");
-  return photo
-    ? `<img class="card-photo" src="${esc(photo.data)}" alt="Recto de ${esc(c.name || "la carte")}">`
-    : `<div class="card-placeholder">${icon("stack")}<span>À photographier</span></div>`;
-}
-function collectionGrid(list) {
-  return list.length
-    ? `<div class="collection-grid">${list.map((c) => `<button class="collection-card" data-action="edit" data-id="${c.id}"><div class="card-image">${cardVisual(c)}${badge(c.status)}</div><div class="card-info"><small>${esc(c.set || "EXTENSION À IDENTIFIER")}</small><h3>${esc(c.name || "Nouvelle carte")}</h3><div class="card-meta"><span>${esc(c.number || "N° à identifier")} · ${esc(c.language.toUpperCase())}</span><strong>${+c.price > 0 ? money(+c.price) : "—"}</strong></div></div></button>`).join("")}</div>`
-    : `<div class="empty"><div class="empty-icon">${icon("stack")}</div><h3>Votre prochaine trouvaille commence ici.</h3><p>Ajoutez votre première carte pour préparer sa mise en vente.</p>${btn(icon("plus") + " Ajouter une carte", "new")}</div>`;
+  app.innerHTML = layout(content, {
+    view,
+    version: packageInfo.version,
+    stage: quickStage,
+  });
+  setSaveStatus(saveStatusMessage, saveStatusError);
 }
 function renderDashboard() {
-  const total = cards.reduce(
-    (s, c) =>
-      s +
-      (c.status !== "Vendue" && c.status !== "Archivée" ? +c.price || 0 : 0),
-    0,
-  );
-  shell(
-    `<div class="page-heading"><div><div class="eyebrow">DE LA COLLECTION À LA VENTE</div><h1>Vos cartes. Leur prochain chapitre.</h1><p>Identifiez, estimez et préparez vos annonces dans un seul atelier.</p></div>${btn(icon("plus") + " Ajouter une carte", "new")}</div><section class="hero"><div class="hero-copy"><span class="hero-label">MOINS DE SAISIE. PLUS DE COLLECTION.</span><h2>Une photo.<br>Le début d’une annonce.</h2><p>Retrouvez la bonne référence, comparez les prix<br class="desktop"> et créez une annonce qui inspire confiance.</p>${btn(icon("scan") + " Scanner ma première carte", "new", "light")}<div class="hero-note">Recto + verso · Référence vérifiable · Annonce modifiable</div></div><div class="hero-art" aria-hidden="true"><div class="orbit"></div><div class="decor-card back-card"></div><div class="decor-card front-card"><div class="decor-top">POKE SCAN SELL <span>✦</span></div><div class="decor-scene"><div class="orb"></div><span>✧</span></div><div class="decor-lines"><i></i><i></i><i></i></div></div><div class="floating-label">${icon("check")} Chaque détail compte</div></div></section><div class="stats"><article><span>Cartes dans l’atelier</span><strong>${cards.length.toString().padStart(2, "0")}</strong><small>Votre inventaire personnel</small></article><article><span>Annonces prêtes</span><strong>${cards
-      .filter((c) => c.status === "Prête")
-      .length.toString()
-      .padStart(
-        2,
-        "0",
-      )}</strong><small>À transférer vers Vinted</small></article><article><span>Prix de vente cumulés</span><strong>${money(total)}</strong><small>Prix saisis · hors cartes vendues et archivées</small></article></div><div class="section-heading"><div><h2>Dans votre collection</h2><p>Reprenez là où vous en étiez.</p></div>${btn("Tout voir " + icon("arrow"), "inventory", "text-button")}</div>${collectionGrid(cards.slice(0, 4))}<div class="service-note">${icon("check")} <p><strong>Des informations vérifiables, à chaque étape.</strong><br>Catalogue TCGdex · Tendances Cardmarket si disponibles · Publication Vinted assistée.</p></div>`,
-  );
+  shell(dashboardView(cards));
+}
+function inventoryCards() {
+  return filterCards(cards, {
+    query,
+    group: statusFilter,
+    sort: inventorySort,
+  });
 }
 function renderInventory() {
-  const list = cards.filter(
-    (c) =>
-      (statusFilter === "all" || c.status === statusFilter) &&
-      `${c.name} ${c.number} ${c.set}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
   shell(
-    `<div class="page-heading"><div><div class="eyebrow">VOTRE INVENTAIRE</div><h1>Chaque carte, à sa place.</h1><p>${cards.length} exemplaire(s) enregistré(s) dans ce navigateur.</p></div>${btn(icon("plus") + " Ajouter une carte", "new")}</div><div class="filters"><input id="inventory-search" type="search" placeholder="Rechercher un nom, un numéro, une extension…" aria-label="Rechercher dans la collection" value="${esc(query)}"><select id="status-filter" aria-label="Filtrer par statut"><option value="all">Tous les statuts</option>${STATUSES.map((s) => `<option ${s === statusFilter ? "selected" : ""}>${s}</option>`).join("")}</select></div><div id="collection-results">${collectionGrid(list)}</div>`,
+    inventoryView(cards, inventoryCards(), {
+      query,
+      statusFilter,
+      sort: inventorySort,
+    }),
   );
 }
 function renderSettings() {
+  let backupDate = "";
+  try {
+    const date = localStorage.getItem("poke-scan-sell:last-backup");
+    if (date)
+      backupDate = new Date(date).toLocaleString("fr-FR", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+  } catch {
+    /* Backup export remains available if preferences are blocked. */
+  }
   shell(
-    `<div class="page-heading"><div><div class="eyebrow">DONNÉES & SERVICES</div><h1>Vous gardez la main.</h1><p>Un espace local, des sources identifiées et aucun mot de passe à partager.</p></div></div><div class="two-cols"><section class="panel"><h2>Vos sauvegardes</h2><p>Les cartes et les photos sont enregistrées avec IndexedDB dans ce navigateur. Elles ne sont pas synchronisées entre appareils. Effacer les données du navigateur les supprime.</p><p>Exportez un fichier JSON pour conserver vos originaux et reprendre votre inventaire ailleurs.</p><div class="actions">${btn(icon("download") + " Exporter l’inventaire", "export")}<label class="button secondary">Restaurer une sauvegarde<input type="file" id="restore" accept="application/json" hidden></label></div><p class="muted">Import limité à 50 Mo. Les exemplaires sont importés sous de nouveaux identifiants, sans remplacer les cartes existantes.</p></section><section class="panel"><h2>Services connectés</h2><div class="service-row"><div><strong>TCGdex</strong><small>Catalogue public & indicateurs de marché</small></div>${badge("Disponible en ligne")}</div><div class="service-row"><div><strong>Tesseract.js</strong><small>Lecture du texte dans votre navigateur</small></div>${badge("OCR local")}</div><div class="service-row"><div><strong>Vinted</strong><small>Remplissage via le compagnon Chrome / Edge</small></div>${badge("Assisté")}</div><p class="muted">L’OCR charge ses modèles depuis cette application. Les recherches transmettent le nom, le numéro et la langue à TCGdex, mais pas vos photos. Le mode IA optionnel envoie recto et verso à OpenAI via votre serveur après votre accord. Le compagnon remplit le formulaire ; vous terminez la publication sur Vinted.</p></section></div><section class="panel"><h2>Analyse photo par IA (optionnelle)</h2><p>Configurez la clé OpenAI uniquement dans le fichier .env du serveur. Ici, saisissez le code d’accès APP_ACCESS_TOKEN de votre instance, jamais la clé OpenAI. Ce code reste dans cet onglet et disparaît à sa fermeture.</p><label class="field">Code d’accès au serveur IA<input id="vision-access" type="password" autocomplete="off" placeholder="Code APP_ACCESS_TOKEN configuré sur le serveur"></label><div class="actions">${btn("Enregistrer le code dans cet onglet", "save-vision-access", "secondary")}${btn("Effacer le code", "clear-vision-access", "text-button")}</div><p class="muted">Le service est optionnel et les appels API sont facturés par le fournisseur. L’identité et l’état proposés restent à confirmer. L’OCR local fonctionne sans cette configuration.</p></section><section class="panel"><h2>Comment les estimations sont calculées</h2><p>Au moins trois comparables confirmés, en euros, de moins de 90 jours, pour la même référence, variante, langue et état. Les marchés et les prix demandés/ventes réalisées sont séparés. Les doublons et prix au-delà de quatre fois ou en dessous du quart de la médiane sont exclus. Une fourchette interquartile est affichée ; elle n’est pas une garantie de vente.</p><p>Les tendances Cardmarket relayées par TCGdex sont des agrégats qui ne certifient ni la langue ni l’état de votre carte. Elles ne sont jamais utilisées seules pour une estimation selon l’état.</p></section>`,
+    settingsView({
+      cards,
+      connection: vintedConnectionText(),
+      installation: vintedInstallationView(),
+      backupDate,
+    }),
   );
+}
+function renderHelp() {
+  shell(helpView(vintedInstallationView()));
 }
 function renderEditor() {
   if (!active) return;
   if (quickMode) return renderQuickEditor();
   const e = estimate(active);
   shell(
-    `<div class="editor-heading"><div><div class="eyebrow">${esc(active.name || "NOUVEL EXEMPLAIRE")}</div><h1>Préparons votre annonce.</h1>${btn("Revenir au mode rapide", "quick-mode", "text-button")}</div><div class="saved"><span class="dot"></span> Sauvegarde locale ${badge(active.status)}</div></div><div class="steps" role="navigation" aria-label="Étapes de préparation">${steps.map((s, i) => `<button data-action="step" data-step="${i}" class="step ${i === step ? "current" : ""}"><span>${i + 1}</span>${s}</button>`).join("")}</div><div class="editor-layout"><section class="editor-main">${[photosView, identityView, conditionView, priceView, listingView][step](e)}<div class="step-footer">${btn(step ? "← Étape précédente" : "← Ma collection", step ? "previous" : "inventory", "secondary")}${step < 4 ? btn("Continuer " + icon("arrow"), "next") : ""}</div></section><aside class="summary panel"><span class="eyebrow">VOTRE EXEMPLAIRE</span><div class="summary-image">${cardVisual(active)}</div><h3>${esc(active.name || "Carte à identifier")}</h3><p>${esc(active.set || "Extension non précisée")}<br>${esc(active.number || "Numéro à renseigner")} · ${esc(active.language.toUpperCase())}</p><div class="summary-line"><span>Variante</span><strong>${esc(active.variant || "Non précisée")}</strong></div><div class="summary-line"><span>État</span><strong>${esc(active.condition || "À vérifier")}</strong></div><div class="summary-line"><span>Prix choisi</span><strong>${+active.price > 0 ? money(+active.price) : "—"}</strong></div><p class="muted">Un exemplaire unique.<br>Vos modifications sont enregistrées à chaque changement de champ.</p></aside></div>`,
+    `<div class="editor-heading"><div><div class="eyebrow">${esc(active.name || "NOUVEL EXEMPLAIRE")}</div><h1>Préparons votre annonce.</h1>${btn("Revenir au parcours guidé", "quick-mode", "text-button")}</div><div class="saved"><span class="dot"></span> Sauvegarde locale ${badge(active.status)}</div></div><div class="steps" role="navigation" aria-label="Étapes de préparation">${steps.map((s, i) => `<button data-action="step" data-step="${i}" class="step ${i === step ? "current" : ""}"><span>${i + 1}</span>${s}</button>`).join("")}</div><div class="editor-layout"><section class="editor-main">${[photosView, identityView, conditionView, priceView, listingView][step](e)}<div class="step-footer">${btn(step ? "← Étape précédente" : "← Ma collection", step ? "previous" : "inventory", "secondary")}${step < 4 ? btn("Continuer " + icon("arrow"), "next") : ""}</div></section><aside class="summary panel"><span class="eyebrow">VOTRE EXEMPLAIRE</span><div class="summary-image">${cardVisual(active)}</div><h3>${esc(active.name || "Carte à identifier")}</h3><p>${esc(active.set || "Extension non précisée")}<br>${esc(active.number || "Numéro à renseigner")} · ${esc(active.language.toUpperCase())}</p><div class="summary-line"><span>Variante</span><strong>${esc(active.variant || "Non précisée")}</strong></div><div class="summary-line"><span>État</span><strong>${esc(active.condition || "À vérifier")}</strong></div><div class="summary-line"><span>Prix choisi</span><strong>${+active.price > 0 ? money(+active.price) : "—"}</strong></div><p class="muted">Un exemplaire unique.<br>Vos modifications sont enregistrées à chaque changement de champ.</p></aside></div>`,
   );
 }
 function renderQuickEditor() {
-  const hasPhotos = ["front", "back"].every((side) =>
-    active.photos.some((p) => p.side === side),
+  shell(
+    quickView({
+      card: active,
+      stage: quickStage,
+      photos: quickStage === "photos" ? photosView() : "",
+      listing: quickStage === "listing" ? listingView(true) : "",
+      e: estimate(active),
+      message: quickMessage,
+      errors: reviewErrors,
+    }),
   );
-  const e = estimate(active);
-  const detected =
-    active.catalogId ||
-    active.ocrText ||
-    active.aiAnalysis ||
-    active.scanDiagnostics ||
-    active.name;
-  shell(`<div class="editor-heading"><div><div class="eyebrow">MODE RAPIDE</div><h1>Deux photos. Une annonce.</h1><p>Photographiez, laissez l’application préparer, puis vérifiez.</p></div><div class="saved">${badge(active.status)}</div></div>
-    <div class="quick-layout"><section>
-    ${!detected ? photosView() : `<details class="panel"><summary>Vos photos (${active.photos.length}) · modifier</summary>${photosView()}</details>`}
-    <section class="panel"><h2>Préparation automatique</h2><p>Lecture du nom et du numéro, puis chargement de la tendance Cardmarket si la référence catalogue est identifiée.</p>
-    ${select("Langue de la carte", "language", active.language, [
-      ["fr", "Français"],
-      ["en", "Anglais"],
-    ])}
-    <label class="check-row"><input id="quick-ai" type="checkbox"> Ajouter l’analyse IA du nom, du numéro et de l’état : envoyer recto et verso à OpenAI via mon serveur configuré (appel facturé).</label>
-    <div class="actions">${btn(icon("scan") + (detected ? "Relancer la préparation" : "Préparer ma carte"), "quick-prepare", "primary", !hasPhotos ? "disabled" : "")}${btn("Saisie manuelle / options avancées", "advanced-mode", "text-button")}</div>
-    <div id="job-status" role="status">${esc(quickMessage)}</div></section>
-    ${
-      detected
-        ? `<section class="panel"><div class="eyebrow">VÉRIFICATION FINALE</div><h2>Vérifiez, ajustez, puis validez.</h2>
-    ${!active.catalogId ? `<p class="notice ${active.name && active.number ? "" : "amber"}">${esc(quickMessage || (active.name && active.number ? "Nom et numéro renseignés. L’édition est facultative." : "Reprenez une photo lisible du nom et du numéro."))}</p>` : `<p class="notice">Carte identifiée automatiquement · ${esc(active.catalogId)}</p>`}
-    <div class="form-grid">${input("Nom", "name", active.name)}${input("Numéro", "number", active.number)}</div>
-    ${active.ocrText ? `<details><summary>Texte lu dans la photo</summary><pre>${esc(active.ocrText)}</pre></details>` : ""}
-    <details><summary>Extension et variante (facultatif)</summary><div class="form-grid">${input("Extension (facultatif)", "set", active.set)}${active.variantOptions?.length ? select("Variante (facultatif)", "variant", active.variant, [["", "Non précisée"], ...[...new Set([...active.variantOptions, active.variant].filter(Boolean))].map((v) => [v, v])]) : input("Variante / édition (facultatif)", "variant", active.variant)}</div></details>
-    ${select("État de la carte", "condition", active.condition, [["", "Choisir après vérification"], ...Object.entries(CONDITIONS)])}
-    ${active.aiAnalysis ? `<p class="notice">Proposition IA : ${esc(active.aiAnalysis.condition)} · ${esc(active.aiAnalysis.confidence)}. ${active.aiAnalysis.defects.map(esc).join(" ; ")}${active.aiAnalysis.warnings.map((w) => `<br>${esc(w)}`).join("")}</p>` : '<p class="muted">Sans IA configurée, l’état reste à choisir après examen des deux faces.</p>'}
-    <label class="field">Défauts constatés<textarea data-field="defectNotes" rows="2">${esc(active.defectNotes)}</textarea></label>
-    ${active.defects.length ? `<p class="notice">Défauts déjà enregistrés : ${active.defects.map(esc).join(", ")}. Modifiez-les dans les options avancées.</p>` : ""}
-    <div class="quick-price"><h3>Votre prix</h3>${e.available ? `<p>Prix proposé selon vos comparables : ${money(e.price)}</p>${btn("Utiliser le prix conseillé", "apply-price", "secondary")}` : active.market?.trend ? `<p>Tendance Cardmarket : <strong>${money(active.market.trend)}</strong> · ${esc(active.market.updated || "date inconnue")}</p><p class="muted">Agrégat catalogue, sans filtrage par état, langue ou variante exacte. Ajustez le prix à votre exemplaire.</p>${btn("Utiliser cette tendance comme point de départ", "use-trend", "secondary")}` : '<p class="notice">Aucune donnée de prix exploitable disponible. Indiquez votre prix ou consultez les comparables dans les options avancées.</p>'}
-    ${input("Prix de vente (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}
-    <a class="inline-link" href="https://www.vinted.fr/catalog?search_text=${encodeURIComponent([active.name, active.number, active.set].join(" "))}" target="_blank" rel="noopener noreferrer">Comparer les annonces Vinted ↗</a></div>
-    ${btn(active.title ? "Valider et actualiser mon annonce" : "Valider ma carte et créer l’annonce", "quick-validate", "primary", !hasPhotos ? "disabled" : "")}
-    <p class="muted">En validant, vous confirmez le nom, le numéro, l’état et les défauts après avoir vérifié les deux faces.</p></section>`
-        : ""
-    }
-    ${active.title ? listingView(true) : ""}
-    </section></div>`);
+}
+function focusStage() {
+  const heading =
+    document.querySelector("#stage-title") || document.querySelector("main h1");
+  heading?.setAttribute("tabindex", "-1");
+  heading?.focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 async function prepareQuickCard(useAI) {
   quickMessage = "Préparation en cours…";
@@ -292,6 +279,7 @@ async function prepareQuickCard(useAI) {
     .filter(Boolean)
     .join(" ");
   await persist();
+  quickStage = "review";
   render();
   toast(
     active.name && active.number
@@ -301,28 +289,29 @@ async function prepareQuickCard(useAI) {
   );
 }
 function photosView() {
-  return `<div class="panel"><div class="eyebrow">${quickMode ? "VOS PHOTOS" : "ÉTAPE 01"}</div><h2>Montrez votre carte sous tous les angles.</h2><p>Posez-la sur un fond uni, en lumière naturelle. Gardez les bords et les défauts visibles.</p><div class="photo-grid">${[
+  return `<section class="panel"><div class="section-intro"><span class="panel-icon">${icon("camera")}</span><div><h2 id="stage-title" tabindex="-1">Deux photos. Une annonce.</h2><p>Cadrez toute la carte, avec une lumière douce et sans reflet.</p></div></div><div class="photo-grid">${[
     "front",
     "back",
   ]
     .map((side) => {
       const p = active.photos.find((p) => p.side === side);
-      return `<div class="photo-slot">${p ? `<img src="${esc(p.data)}" alt="${side === "front" ? "Recto" : "Verso"} de la carte"><button class="remove-photo" data-action="remove-photo" data-id="${p.id}" aria-label="Supprimer la photo ${side === "front" ? "recto" : "verso"}">×</button>` : `${icon("camera")}<h3>${side === "front" ? "Le recto" : "Le verso"}</h3><p>${side === "front" ? "Nom, numéro et illustration" : "Coins, bords et état général"}</p>`}<label class="button secondary">${p ? "Remplacer" : "Ajouter une photo"}<input class="photo-input" type="file" data-side="${side}" accept="image/jpeg,image/png,image/webp" capture="environment" hidden></label></div>`;
+      const label = side === "front" ? "recto" : "verso";
+      return `<div class="photo-slot ${p ? "has-photo" : ""}" data-side="${side}"><div class="photo-slot-label"><span>${side === "front" ? "1" : "2"}</span><strong>${side === "front" ? "Le recto" : "Le verso"}</strong>${p ? `<span class="photo-done">${icon("check")} Ajouté</span>` : ""}</div>${p ? `<img src="${esc(p.data)}" alt="${side === "front" ? "Recto" : "Verso"} de la carte"><button type="button" class="remove-photo" data-action="remove-photo" data-id="${p.id}" aria-label="Supprimer la photo ${label}">×</button>` : `<div class="photo-guide">${icon("camera")}<p>${side === "front" ? "Le nom et le numéro doivent être lisibles." : "Gardez les coins et les bords visibles."}</p></div>`}<label class="button secondary upload-control">${icon(p ? "edit" : "plus")}${p ? " Remplacer" : " Ajouter une photo"}<input class="photo-input sr-only" type="file" data-side="${side}" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="Ajouter ou remplacer le ${label}"></label><small class="drop-hint">${p ? "" : "ou déposez une image ici"}</small></div>`;
     })
     .join(
       "",
-    )}</div><div class="actions"><label class="button secondary">${icon("plus")} Ajouter un détail<input class="photo-input" type="file" data-side="detail" accept="image/jpeg,image/png,image/webp" hidden></label><span class="muted">JPEG, PNG, WebP · 10 Mo/photo · 6 photos maximum</span></div><div class="detail-photos">${active.photos
+    )}</div><details class="photo-extras"><summary>Ajouter des détails ou consulter les conseils photo</summary><p>Montrez les défauts dans les photos de détail : un coin usé, une rayure ou une pliure.</p><label class="button secondary upload-control">${icon("plus")} Ajouter un détail<input class="photo-input sr-only" type="file" data-side="detail" accept="image/jpeg,image/png,image/webp" aria-label="Ajouter une photo de détail"></label><p class="muted">JPEG, PNG ou WebP. Jusqu’à 6 photos de 10 Mo chacune.</p></details><div class="detail-photos">${active.photos
     .filter((p) => p.side === "detail")
     .map(
       (p) =>
-        `<div><img src="${esc(p.data)}" alt="Détail de la carte"><button data-action="remove-photo" data-id="${p.id}" aria-label="Supprimer ce détail">×</button></div>`,
+        `<div><img src="${esc(p.data)}" alt="Détail de la carte"><button type="button" data-action="remove-photo" data-id="${p.id}" aria-label="Supprimer ce détail">×</button></div>`,
     )
     .join("")}</div>${active.photos
     .flatMap((p) => p.warnings || [])
     .map((w) => `<p class="notice amber">${esc(w)}</p>`)
     .join(
       "",
-    )}<p class="notice">Les originaux sont conservés. Aucun filtre n’efface les défauts de votre carte. Vérifiez vous-même la netteté avant de continuer.</p></div>`;
+    )}<div class="photo-privacy">${icon("shield")} Vos photos originales sont conservées, avec les défauts visibles.</div></section>`;
 }
 function identityView() {
   return `<div class="panel"><div class="eyebrow">ÉTAPE 02</div><h2>Identifiez votre carte.</h2><p>Lisez le texte de la photo ou recherchez dans le catalogue, puis confirmez la référence.</p>${btn(icon("scan") + " Lire la photo avec l’OCR", "ocr", "primary", !active.photos.some((p) => p.side === "front") ? "disabled" : "")}<p class="muted">Lecture locale du texte · premier chargement des modèles nécessaire · pas de reconnaissance d’authenticité.</p><div id="job-status" role="status"></div><div class="form-grid">${input("Nom de la carte", "name", active.name)}${input("Numéro (ex. 4/102)", "number", active.number)}${select(
@@ -362,19 +351,24 @@ function vintedConnectionText() {
   return `Compagnon Vinted connecté · v${vintedHelper.version}.`;
 }
 function vintedTransferView(errors) {
-  return `<div class="transfer"><h3>Remplir votre annonce Vinted</h3><p>Envoyez le titre, la description, le prix et vos photos originales en un clic. La catégorie et l’état sont sélectionnés lorsqu’ils sont reconnus dans le formulaire.</p><p id="vinted-connection-status" class="muted">${esc(vintedConnectionText())}</p><div class="actions">${btn(icon("arrow") + " Remplir mon annonce sur Vinted", "vinted-fill", "primary", errors.length ? "disabled" : "")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div><p id="vinted-transfer-status" role="status">${esc(active.vintedTransferMessage || "Vérifiez les photos et les champs demandés sur Vinted, puis publiez votre annonce.")}</p>${vintedInstallationView()}<details><summary>Ouvrir Vinted pour un transfert manuel</summary><a class="button secondary" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted ↗</a><p>Le titre et la description peuvent aussi être copiés avec les boutons ci-dessus ; le ZIP contient vos photos.</p></details></div>`;
+  return `<div class="transfer"><div class="transfer-heading"><span class="transfer-icon">${icon("external")}</span><div><h3>Envoyer l’annonce sur Vinted</h3><p>Les photos, le texte, le prix et l’état sont préremplis dans le formulaire.</p></div></div><p id="vinted-connection-status" class="connection-status">${esc(vintedConnectionText())}</p><div class="actions">${btn(icon("arrow") + " Remplir mon annonce sur Vinted", "vinted-fill", "primary", errors.length ? "disabled" : "")}</div><p id="vinted-transfer-status" role="status" aria-live="polite">${esc(active.vintedTransferMessage || "Relisez le formulaire et les photos dans Vinted avant de cliquer sur Publier.")}</p>${vintedInstallationView()}</div>`;
 }
 function listingView(compact = false) {
   compact = compact === true;
   const errors = readyErrors(active);
-  const stale =
-    active.title && active.listingFingerprint !== listingFingerprint(active);
-  if (stale)
+  if (active.listingFingerprint !== listingFingerprint(active) && active.title)
     errors.push(
-      "La carte a été modifiée : régénérez et relisez le texte de l’annonce.",
+      "La carte a changé. Vérifiez les informations et actualisez l’annonce.",
     );
+  if (
+    (active.title || compact) &&
+    (!active.title?.trim() || !active.description?.trim())
+  )
+    errors.push("Renseignez un titre et une description pour votre annonce.");
   const generationErrors = readyErrors(active);
-  return `<div class="panel"><div class="eyebrow">${compact ? "VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2>Votre annonce, prête à être relue.</h2><p>Relisez votre annonce, puis envoyez-la au formulaire Vinted avec vos photos.</p><p class="muted">Sur Vinted, vérifiez la catégorie cartes à collectionner, les attributs obligatoires et le format du colis emballé.</p>${errors.length ? `<div class="notice amber"><strong>Avant de préparer l’annonce</strong><ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${active.title ? `<div class="listing-fields">${input("Titre de l’annonce", "title", active.title)}<label class="field">Description<textarea data-field="description" rows="10">${esc(active.description)}</textarea></label><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}</div>${vintedTransferView(errors)}${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="muted">Le statut est déclaré par vous ; aucune vérification automatique de Vinted n’est effectuée.</p></div>` : ""}<details><summary>Historique de cet exemplaire</summary>${
+  const hasListing = active.title || active.listingFingerprint;
+  const fields = `${input("Titre de l’annonce", "title", active.title, "text", 'maxlength="500"')}<label class="field">Description<textarea data-field="description" rows="8" maxlength="20000">${esc(active.description)}</textarea></label>`;
+  return `<section class="panel listing-panel"><div class="eyebrow">${compact ? "APERÇU DE VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2 id="stage-title" tabindex="-1">${compact ? "Votre annonce" : "Votre annonce, prête à être relue."}</h2>${errors.length ? `<div class="notice amber" role="alert"><strong>Avant d’envoyer l’annonce</strong><ul>${errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${hasListing ? `<div class="listing-fields">${compact ? `<div class="listing-preview"><h3 id="listing-preview-title">${esc(active.title)}</h3><p id="listing-preview-description">${esc(active.description)}</p><div class="listing-price"><span>Prix de vente</span><strong>${money(+active.price)}</strong></div></div><details class="edit-listing"><summary>${icon("edit")} Modifier le titre ou la description</summary>${fields}</details>` : fields}${vintedTransferView(errors)}<details class="manual-tools"><summary>Copier le texte ou télécharger les photos</summary><p>Retrouvez vos originaux et votre texte pour les utiliser ailleurs.</p><a class="inline-link" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted pour un transfert manuel ↗</a><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div></details><details class="listing-tracking" ${["Publiée", "Vendue"].includes(active.status) ? "open" : ""}><summary>Suivre cette annonce</summary><p>Après publication, ajoutez le lien Vinted et confirmez son statut ici.</p>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="field-help">Le suivi est déclaré par vous, après vérification sur Vinted.</p></details></div>` : ""}<details class="card-admin"><summary>Historique et gestion de la carte</summary>${
     active.history
       .slice()
       .reverse()
@@ -382,14 +376,91 @@ function listingView(compact = false) {
         (h) =>
           `<p class="muted">${esc(new Date(h.at).toLocaleString("fr-FR"))} — ${esc(h.action)}</p>`,
       )
-      .join("") || "<p>Aucune action enregistrée.</p>"
-  }</details><hr><div class="actions">${btn("Archiver la carte", "archive", "secondary")}${btn("Supprimer cet exemplaire", "delete", "danger")}</div></div>`;
+      .join("") || '<p class="muted">Aucune action enregistrée.</p>'
+  }<div class="actions">${btn("Archiver la carte", "archive", "secondary")}${btn("Supprimer cet exemplaire", "delete", "danger")}</div></details></section>`;
 }
-function render() {
+function routeForView() {
+  if (view === "editor" && active)
+    return `#/cards/${active.id}/${quickMode ? quickStage : `advanced/${step}`}`;
+  return (
+    {
+      dashboard: "#/",
+      inventory: "#/cards",
+      settings: "#/settings",
+      help: "#/help",
+    }[view] || "#/"
+  );
+}
+function readRoute() {
+  const parts = location.hash.replace(/^#\/?/, "").split("/");
+  if (parts[0] === "cards" && parts[1]) {
+    active = cards.find((c) => c.id === parts[1]);
+    if (!active) {
+      view = "inventory";
+      return;
+    }
+    view = "editor";
+    quickMode = parts[2] !== "advanced";
+    step = Math.max(0, Math.min(4, Number(parts[3]) || 0));
+    quickStage = ["photos", "review", "listing"].includes(parts[2])
+      ? parts[2]
+      : cardStage(active);
+    if (quickStage === "listing" && !listingReady(active))
+      quickStage = "review";
+    reviewErrors = {};
+    quickMessage = "";
+  } else
+    view =
+      { cards: "inventory", settings: "settings", help: "help" }[parts[0]] ||
+      "dashboard";
+}
+let firstRender = true;
+function render(preserveFocus = false, updateRoute = true) {
+  const focused = preserveFocus ? document.activeElement : null;
+  const detailsState = preserveFocus
+    ? new Map(
+        [...app.querySelectorAll("details")].map((d) => [
+          d.querySelector("summary")?.textContent.trim(),
+          d.open,
+        ]),
+      )
+    : null;
+  const selector = focused?.dataset.field
+    ? `[data-field="${CSS.escape(focused.dataset.field)}"]`
+    : focused?.id
+      ? `#${CSS.escape(focused.id)}`
+      : focused?.dataset.group
+        ? `[data-group="${CSS.escape(focused.dataset.group)}"]`
+        : null;
+  const selection =
+    focused?.selectionStart != null
+      ? [focused.selectionStart, focused.selectionEnd]
+      : null;
+  const scroll = window.scrollY;
   if (view === "editor") renderEditor();
   else if (view === "inventory") renderInventory();
   else if (view === "settings") renderSettings();
+  else if (view === "help") renderHelp();
   else renderDashboard();
+  if (updateRoute && location.hash !== routeForView())
+    history[firstRender ? "replaceState" : "pushState"](
+      null,
+      "",
+      routeForView(),
+    );
+  firstRender = false;
+  if (detailsState)
+    for (const details of app.querySelectorAll("details")) {
+      const key = details.querySelector("summary")?.textContent.trim();
+      if (detailsState.has(key)) details.open = detailsState.get(key);
+    }
+  if (preserveFocus && selector) {
+    const replacement = document.querySelector(selector);
+    replacement?.focus({ preventScroll: true });
+    if (selection && replacement?.setSelectionRange)
+      replacement.setSelectionRange(...selection);
+    window.scrollTo({ top: scroll, behavior: "instant" });
+  }
 }
 async function runJob(message, task) {
   if (busy) return;
@@ -481,6 +552,11 @@ function setMarket(result) {
     : null;
 }
 app.addEventListener("click", async (event) => {
+  if (event.target.closest(".skip-link")) {
+    event.preventDefault();
+    document.querySelector("#main-content")?.focus();
+    return;
+  }
   const target = event.target.closest("[data-action]");
   if (!target) return;
   event.preventDefault();
@@ -492,6 +568,38 @@ app.addEventListener("click", async (event) => {
   await runJobQuiet(async () => {
     if (action === "vinted-extension-download") {
       await runJob("Préparation de l’extension…", downloadVintedExtension);
+      return;
+    }
+    if (action === "check-vinted") {
+      await refreshVintedConnection();
+      toast(
+        vintedHelper.ready
+          ? "Vinted est prêt à recevoir vos annonces."
+          : "Consultez les étapes d’installation ci-dessous.",
+        !vintedHelper.ready,
+      );
+      return;
+    }
+    if (action === "filter-cards") {
+      statusFilter = target.dataset.group;
+      render(true);
+      return;
+    }
+    if (action === "clear-filters") {
+      query = "";
+      statusFilter = "all";
+      renderInventory();
+      document.querySelector("#inventory-search")?.focus();
+      return;
+    }
+    if (action === "quick-stage") {
+      const desired = target.dataset.stage;
+      if (!["photos", "review", "listing"].includes(desired)) return;
+      if (desired === "listing" && !listingReady(active)) return;
+      quickStage = desired;
+      reviewErrors = {};
+      render();
+      focusStage();
       return;
     }
     if (action === "vinted-fill") {
@@ -523,31 +631,54 @@ app.addEventListener("click", async (event) => {
       });
       return;
     }
-    if (["dashboard", "inventory", "settings"].includes(action)) {
+    if (["dashboard", "inventory", "settings", "help"].includes(action)) {
       view = action;
       render();
+      focusStage();
       return;
     }
     if (action === "new") {
-      active = newCard();
+      active =
+        cards.find(
+          (c) =>
+            !c.photos.length &&
+            !c.name &&
+            !c.number &&
+            !c.title &&
+            !c.condition &&
+            !c.defects.length &&
+            !c.observations.length &&
+            !c.set &&
+            !c.variant &&
+            !["Archivée", "Vendue", "Publiée"].includes(c.status) &&
+            !c.defectNotes &&
+            !c.price,
+        ) || newCard();
       quickMode = true;
+      quickStage = "photos";
+      reviewErrors = {};
       quickMessage = "";
-      cards.unshift(active);
+      if (!cards.some((c) => c.id === active.id)) cards.unshift(active);
       await persist();
       view = "editor";
       step = 0;
       candidates = [];
       render();
+      focusStage();
       return;
     }
     if (action === "edit") {
       active = cards.find((c) => c.id === target.dataset.id);
+      if (!active) return;
       quickMode = true;
+      quickStage = cardStage(active);
+      reviewErrors = {};
       quickMessage = "";
       view = "editor";
       step = 0;
       candidates = [];
       render();
+      focusStage();
       return;
     }
     if (action === "step" || action === "next" || action === "previous") {
@@ -561,6 +692,7 @@ app.addEventListener("click", async (event) => {
     }
     if (action === "advanced-mode" || action === "quick-mode") {
       quickMode = action === "quick-mode";
+      if (quickMode) quickStage = cardStage(active);
       step = 0;
       render();
       return;
@@ -590,7 +722,19 @@ app.addEventListener("click", async (event) => {
         conditionConfirmed: true,
       };
       const errors = readyErrors(proposed);
-      if (errors.length) throw new Error(errors.join(" "));
+      reviewErrors = reviewIssues(proposed);
+      if (errors.length || Object.keys(reviewErrors).length) {
+        render();
+        document.querySelector('[aria-invalid="true"]')?.focus();
+        toast(errors.join(" ") || "Complétez les champs indiqués.", true);
+        return;
+      }
+      if (listingReady(active)) {
+        quickStage = "listing";
+        render();
+        focusStage();
+        return;
+      }
       if (
         active.title &&
         !confirm(
@@ -605,10 +749,10 @@ app.addEventListener("click", async (event) => {
       active.status = "Prête";
       log("Carte vérifiée et annonce générée en mode rapide");
       await persist();
+      quickStage = "listing";
+      reviewErrors = {};
       render();
-      document
-        .querySelector(".listing-fields")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      focusStage();
       return;
     }
     if (action === "save-vision-access") {
@@ -665,6 +809,15 @@ app.addEventListener("click", async (event) => {
         ),
         `poke-scan-sell-${today()}.json`,
       );
+      try {
+        localStorage.setItem(
+          "poke-scan-sell:last-backup",
+          new Date().toISOString(),
+        );
+      } catch {
+        /* Optional preference. */
+      }
+      if (view === "settings") renderSettings();
       toast("Sauvegarde téléchargée. Conservez-la dans un endroit sûr.");
       return;
     }
@@ -879,6 +1032,32 @@ async function runJobQuiet(task) {
     );
   }
 }
+function updateField(el) {
+  const f = el.dataset.field;
+  const value = el.type === "checkbox" ? el.checked : el.value;
+  delete reviewErrors[f];
+  const unchanged =
+    typeof value === "boolean"
+      ? active[f] === value
+      : String(active[f] ?? "") === value;
+  if (unchanged) return;
+  active[f] = value;
+  if (["title", "description"].includes(f)) {
+    delete active.vintedTransferId;
+    delete active.vintedTransferMessage;
+  }
+  if (["name", "number", "set", "language"].includes(f)) clearIdentity();
+  if (f === "variant") {
+    active.identityConfirmed = false;
+    invalidateListing();
+  }
+  if (["condition", "defectNotes"].includes(f)) {
+    active.conditionConfirmed = false;
+    invalidateListing();
+  }
+  if (["price", "identityConfirmed", "conditionConfirmed"].includes(f))
+    invalidateListing();
+}
 app.addEventListener("change", (event) =>
   runJobQuiet(async () => {
     const el = event.target;
@@ -925,6 +1104,11 @@ app.addEventListener("change", (event) =>
       renderInventory();
       return;
     }
+    if (el.id === "inventory-sort") {
+      inventorySort = el.value;
+      render(true);
+      return;
+    }
     if (el.id === "catalog-variant") {
       active.variant = el.value;
       active.identityConfirmed = false;
@@ -944,23 +1128,11 @@ app.addEventListener("change", (event) =>
       return;
     }
     if (el.dataset.field) {
+      clearTimeout(fieldSaveTimer);
+      fieldSaveTimer = null;
+      const editing = active;
       const f = el.dataset.field;
-      active[f] = el.type === "checkbox" ? el.checked : el.value;
-      if (["title", "description"].includes(f)) {
-        delete active.vintedTransferId;
-        delete active.vintedTransferMessage;
-      }
-      if (["name", "number", "set", "language"].includes(f)) clearIdentity();
-      if (f === "variant") {
-        active.identityConfirmed = false;
-        invalidateListing();
-      }
-      if (["condition", "defectNotes"].includes(f)) {
-        active.conditionConfirmed = false;
-        invalidateListing();
-      }
-      if (["price", "identityConfirmed", "conditionConfirmed"].includes(f))
-        invalidateListing();
+      updateField(el);
       if (
         f === "identityConfirmed" &&
         el.checked &&
@@ -970,6 +1142,15 @@ app.addEventListener("change", (event) =>
         throw new Error("Renseignez le nom et le numéro de la carte.");
       }
       await persist();
+      if (active !== editing || view !== "editor") return;
+      if (["title", "description"].includes(f)) {
+        const preview = document.querySelector(`#listing-preview-${f}`);
+        if (preview) preview.textContent = active[f];
+        for (const button of app.querySelectorAll(
+          '[data-action="vinted-fill"], [data-action="listing-zip"]',
+        ))
+          button.disabled = !listingReady(active);
+      }
       if (
         [
           ...(quickMode
@@ -981,26 +1162,45 @@ app.addEventListener("change", (event) =>
           "conditionConfirmed",
         ].includes(f)
       )
-        render();
+        render(true);
     }
   }),
 );
 app.addEventListener("input", (event) => {
   if (event.target.id === "inventory-search") {
     query = event.target.value;
+    const list = inventoryCards();
     document.querySelector("#collection-results").innerHTML = collectionGrid(
-      cards.filter(
-        (c) =>
-          (statusFilter === "all" || c.status === statusFilter) &&
-          `${c.name} ${c.number} ${c.set}`
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-      ),
+      list,
+      { filtered: !!cards.length },
     );
+    document.querySelector("#collection-count").textContent =
+      `${list.length} carte${list.length > 1 ? "s" : ""} affichée${list.length > 1 ? "s" : ""}`;
+  } else if (
+    event.target.dataset.field &&
+    event.target.type !== "checkbox" &&
+    event.target.tagName !== "SELECT"
+  ) {
+    clearTimeout(fieldSaveTimer);
+    const el = event.target,
+      id = active?.id;
+    updateField(el);
+    setSaveStatus("Enregistrement…");
+    fieldSaveTimer = setTimeout(() => {
+      fieldSaveTimer = null;
+      if (active?.id !== id) return;
+      if (el.isConnected)
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      else runJobQuiet(persist);
+    }, 350);
   }
 });
 app.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (event.target.id === "quick-review") {
+    event.target.querySelector('[data-action="quick-validate"]')?.click();
+    return;
+  }
   if (event.target.id !== "observation-form") return;
   runJobQuiet(async () => {
     const f = new FormData(event.target);
@@ -1119,6 +1319,7 @@ function validateBackup(data) {
 try {
   cards = (await listCards()).map(migrateCard);
   cards.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  readRoute();
   render();
 } catch {
   app.innerHTML =
@@ -1145,5 +1346,27 @@ async function refreshVintedConnection() {
     // A closed or expired transfer can be sent again from the current draft.
   }
 }
+window.addEventListener("hashchange", () => {
+  if (busy) {
+    history.replaceState(null, "", routeForView());
+    return;
+  }
+  readRoute();
+  render(false, false);
+  focusStage();
+});
+for (const type of ["dragover", "dragleave", "drop"])
+  app.addEventListener(type, (event) => {
+    const slot = event.target.closest(".photo-slot[data-side]");
+    if (!slot) return;
+    event.preventDefault();
+    slot.classList.toggle("drag-over", type === "dragover");
+    if (type !== "drop" || busy || !event.dataTransfer?.files[0]) return;
+    const input = slot.querySelector(".photo-input");
+    const transfer = new DataTransfer();
+    transfer.items.add(event.dataTransfer.files[0]);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 window.addEventListener("focus", refreshVintedConnection);
 refreshVintedConnection();

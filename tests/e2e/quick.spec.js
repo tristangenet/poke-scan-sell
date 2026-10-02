@@ -113,15 +113,19 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
   await expect(page.locator('[data-field="description"]')).not.toHaveValue(
     /Protection et expédition|État Vinted/,
   );
+  await page.locator(".manual-tools > summary").click();
   await expect(
     page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
   ).toBeEnabled();
+  await page.getByRole("button", { name: "Modifier les informations" }).click();
   await page.locator('[data-field="price"]').fill("45");
   await page.locator('[data-field="price"]').blur();
-  await page.getByRole("button", { name: "Relancer la préparation" }).focus();
   await expect(
-    page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
+    page.getByRole("button", { name: "3 Annonce", exact: true }),
   ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
+  ).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
@@ -130,16 +134,9 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
   ).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: "/tmp/poke-quick-mobile.png", fullPage: true });
-  await page
-    .getByRole("button", { name: "Vue d’ensemble", exact: true })
-    .click();
-  await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
-    .first()
-    .click();
-  await page
-    .getByRole("button", { name: "Saisie manuelle / options avancées" })
-    .click();
+  await page.getByRole("button", { name: "Accueil", exact: true }).click();
+  await page.getByRole("button", { name: "Scanner", exact: true }).click();
+  await page.getByRole("button", { name: "Options avancées" }).click();
   await page.getByRole("button", { name: "5 Annonce" }).click();
   await expect(
     page.locator('[data-field="vintedCondition"], [data-field="packaging"]'),
@@ -187,6 +184,7 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
   await expect(page.locator('[data-field="description"]')).not.toHaveValue(
     /Extension|Variante/,
   );
+  await page.locator(".manual-tools > summary").click();
   await expect(
     page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
   ).toBeEnabled();
@@ -217,6 +215,7 @@ test("mode IA configuré : identité et état proposés en une préparation", as
     .first()
     .click();
   await addPhotos(page);
+  await page.locator(".analysis-options > summary").click();
   await page.locator("#quick-ai").check();
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
   await expect(page.locator('[data-field="condition"]')).toHaveValue("EX");
@@ -337,7 +336,9 @@ test("lecture partielle : le nom reste rempli après les tentatives automatiques
   );
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
   await expect(page.locator('[data-field="number"]')).toHaveValue("");
-  await page.getByText("Texte lu dans la photo", { exact: true }).click();
+  await page
+    .getByText("Voir le texte lu sur la photo", { exact: true })
+    .click();
   await expect(page.locator("pre")).toContainText("Lecture agrandie du numéro");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
 });
@@ -424,6 +425,7 @@ test("une analyse IA lisant le nom et le numéro reste exploitable sans fiche ca
     .first()
     .click();
   await addPhotos(page);
+  await page.locator(".analysis-options > summary").click();
   await page.locator("#quick-ai").check();
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
   await expect(page.locator("#job-status")).toContainText("Nom et numéro lus");

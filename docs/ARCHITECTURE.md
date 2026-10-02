@@ -1,20 +1,35 @@
-# Architecture — version 0.2.9
+# Architecture — version 0.3.0
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
-| Module                | Responsabilité                                                        |
-| --------------------- | --------------------------------------------------------------------- |
-| src/main.js           | Navigation, formulaires, brouillons et commandes utilisateur          |
-| src/domain.js         | États, règles de préparation, estimation, empreinte d'annonce         |
-| src/storage.js        | Transactions IndexedDB                                                |
-| src/catalog.js        | TCGdex et orchestration de la lecture OCR                             |
-| src/catalog-client.js | Reprises, cache et limite de concurrence des requêtes catalogue       |
-| src/ocr.js            | Copies de lecture, zones agrandies et reprises OCR bornées            |
-| src/recognition.js    | Extraction de nom/numéro et résolution catalogue                      |
-| src/photos.js         | Import d'originaux, contrôles d'éclairage/résolution, téléchargements |
-| src/vision.js         | Appel du serveur IA, sans clé fournisseur                             |
-| server/index.js       | Fichiers construits, contrôle d'accès/origine, limites, API           |
-| server/vision.js      | Validation photos et appel Responses structuré                        |
+| Module                | Responsabilité                                                                    |
+| --------------------- | --------------------------------------------------------------------------------- |
+| src/main.js           | Routes, commandes, préparation, autosauvegarde et transfert utilisateur           |
+| src/interface.js      | Navigation commune, accueil, collection, récapitulatif, paramètres et aide        |
+| src/quick-view.js     | Trois écrans du parcours Photos → Vérification → Annonce                          |
+| src/ui-state.js       | Étape de reprise, validité d’annonce, groupes, tri, recherche et erreurs de champ |
+| src/domain.js         | États, règles de préparation, estimation, empreinte d'annonce                     |
+| src/storage.js        | Transactions IndexedDB                                                            |
+| src/catalog.js        | TCGdex et orchestration de la lecture OCR                                         |
+| src/catalog-client.js | Reprises, cache et limite de concurrence des requêtes catalogue                   |
+| src/ocr.js            | Copies de lecture, zones agrandies et reprises OCR bornées                        |
+| src/recognition.js    | Extraction de nom/numéro et résolution catalogue                                  |
+| src/photos.js         | Import d'originaux, contrôles d'éclairage/résolution, téléchargements             |
+| src/vision.js         | Appel du serveur IA, sans clé fournisseur                                         |
+| server/index.js       | Fichiers construits, contrôle d'accès/origine, limites, API                       |
+| server/vision.js      | Validation photos et appel Responses structuré                                    |
+
+## Navigation et saisie
+
+Le parcours par défaut sépare les photos, la vérification et l’annonce. Les options avancées conservent les cinq étapes détaillées. Les champs d’extension/variante, outils de transfert manuel, suivi et configuration IA sont accessibles dans des volets repliés.
+
+Les routes utilisent le fragment d’URL : `#/`, `#/cards`, `#/help`, `#/settings`, `#/cards/:id/photos|review|listing` et `#/cards/:id/advanced/:step`. Le rechargement et la navigation précédent/suivant reprennent une carte enregistrée. Une route d’annonce périmée ramène à la vérification. Les liens et commandes restent dans le même document.
+
+La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistrée dans IndexedDB après 350 ms d’inactivité ou à la sortie du champ. Cela évite de perdre une saisie lorsque la sauvegarde d’un autre champ termine. Les écritures capturent la carte concernée ; le statut affiché suit la réussite ou l’erreur de la transaction. Les rafraîchissements du formulaire conservent le focus, la sélection, la position et les volets ouverts. Les erreurs de validation sont associées aux champs, et la navigation place le focus sur le titre de la page.
+
+La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
+
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.9 ; la version commerciale/interface 0.3.0 ne change pas le protocole ni l’origine autorisée.
 
 ## Modèle local
 
@@ -43,3 +58,7 @@ Le sélecteur d’état est recherché jusqu’à la fin du délai de montage, m
 ## Limites
 
 Pas de comptes, synchronisation cloud, traitement par lots, gradation professionnelle, garantie d'authenticité ou déploiement public fourni. La précision de l'OCR et de l'IA sur un corpus de vraies cartes n'est pas encore mesurée. L'analyse du flou et des reflets est guidée humainement ; les contrôles photo automatisés ne mesurent que luminosité et résolution.
+
+## Évolution commerciale
+
+La séparation entre vues, état d’affichage et règles de carte permet d’ajouter ultérieurement comptes, collection distante et espace de facturation. Ces fonctionnalités restent à développer, avec droits et comptage contrôlés côté serveur. Voir [la préparation d’une offre commerciale](OFFRE_COMMERCIALE.md).
