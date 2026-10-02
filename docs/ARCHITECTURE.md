@@ -29,7 +29,13 @@ La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistr
 
 La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
 
-Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.9 ; la version commerciale/interface 0.3.0 ne change pas le protocole ni l’origine autorisée.
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.9 ; la version de l’interface 0.4.0 ne change pas le protocole ni l’origine autorisée.
+
+## Inspection de la carte — interface 0.4.0
+
+Le choix recto/verso reste un état d’affichage temporaire dans `src/main.js` ; il ne modifie ni l’exemplaire ni ses photos. `summaryView` affiche la face sélectionnée. La boîte native `dialog` agrandit l’original, garde la navigation au clavier dans la boîte et rend le focus au bouton d’ouverture après fermeture. Le résumé reste accessible pendant la vérification et l’annonce sur téléphone.
+
+Les compteurs de l’accueil ouvrent la collection avec le filtre correspondant. Les repères du parcours distinguent l’étape affichée et les étapes effectivement complétées. Les illustrations et le logo sont des SVG servis par l’application. Les règles de génération, prix, sauvegarde et transfert Vinted restent dans leurs modules existants.
 
 ## Modèle local
 

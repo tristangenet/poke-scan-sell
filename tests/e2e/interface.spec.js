@@ -214,6 +214,92 @@ test("collection : recherche sans accent, statuts réels, tri et filtres effaça
   await expect(page.locator(".collection-card")).toHaveCount(5);
 });
 
+test("accueil : les compteurs ouvrent la collection filtrée sans perdre les archives", async ({
+  page,
+}) => {
+  await seedCollection(page);
+  await page.locator('.stat-card[data-group="ready"]').click();
+  await expect(page).toHaveURL(/#\/cards$/);
+  await expect(
+    page.locator('.filter-chip[data-group="ready"]'),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".collection-card")).toHaveCount(1);
+  await expect(page.locator(".collection-card h3")).toHaveText("Pikachu");
+  await expect(page.locator("main h1")).toBeFocused();
+  await page.getByRole("button", { name: "Accueil", exact: true }).click();
+  await page.locator('.stat-card[data-group="sold"]').click();
+  await expect(page.locator(".collection-card h3")).toHaveText("Mew");
+  await page.getByRole("button", { name: "Accueil", exact: true }).click();
+  await page.locator('.stat-card[data-group="all"]').click();
+  await expect(page.locator(".collection-card")).toHaveCount(5);
+});
+
+for (const width of [1440, 390, 320]) {
+  test(`inspection ${width} px : recto/verso, agrandissement au clavier et sauvegarde sans modifier les photos`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const [id] = await seedCollection(page);
+    const back = await page.evaluate(async (id) => {
+      const { listCards, saveCard } = await import("/src/storage.js");
+      const card = (await listCards()).find((c) => c.id === id);
+      const canvas = document.createElement("canvas");
+      canvas.width = 10;
+      canvas.height = 15;
+      const context = canvas.getContext("2d");
+      context.fillStyle = "#263d78";
+      context.fillRect(0, 0, 10, 15);
+      const data = canvas.toDataURL("image/png");
+      card.photos.find((p) => p.side === "back").data = data;
+      await saveCard(card);
+      return data;
+    }, id);
+    await page.goto(`/#/cards/${id}/review`);
+    await page.reload();
+    const summary = page.getByRole("complementary", {
+      name: "Résumé de la carte",
+    });
+    await expect(summary).toBeVisible();
+    await expect(summary.locator(".card-photo")).toHaveAttribute("src", data);
+    const verso = summary.getByRole("button", { name: "Verso", exact: true });
+    await verso.click();
+    await expect(verso).toBeFocused();
+    await expect(verso).toHaveAttribute("aria-pressed", "true");
+    await expect(summary.locator(".card-photo")).toHaveAttribute("src", back);
+    await page.locator('[data-field="price"]').fill("12.99");
+    await expect(page.locator("#save-status")).toHaveText(
+      "Enregistré sur cet appareil",
+    );
+    await expect(summary.locator(".card-photo")).toHaveAttribute("src", back);
+    await page.getByRole("button", { name: "Agrandir le verso" }).click();
+    const dialog = page.getByRole("dialog", { name: "Verso · Évoli" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator("img")).toHaveAttribute("src", back);
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Agrandir le verso" }),
+    ).toBeFocused();
+    await page.getByRole("button", { name: "Agrandir le verso" }).click();
+    await page.getByRole("button", { name: "Fermer la photo" }).click();
+    await expect(dialog).not.toBeVisible();
+    await summary.getByRole("button", { name: "Recto", exact: true }).click();
+    await expect(summary.locator(".card-photo")).toHaveAttribute("src", data);
+    const persisted = await page.evaluate(async (id) => {
+      const { listCards } = await import("/src/storage.js");
+      const card = (await listCards()).find((c) => c.id === id);
+      return { price: card.price, photos: card.photos.map((p) => p.data) };
+    }, id);
+    expect(Number(persisted.price)).toBe(12.99);
+    expect(persisted.photos).toEqual([data, back]);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
+}
+
 for (const width of [320, 390, 768]) {
   test(`interface ${width} px : toutes les pages utilisables sans débordement et navigation accessible`, async ({
     page,

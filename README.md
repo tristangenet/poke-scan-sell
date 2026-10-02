@@ -4,9 +4,17 @@ De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses inf
 
 ![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
 
-## Version 0.3.1 — une interface plus simple
+## Version 0.4.0 — le compagnon de votre collection Pokémon
 
-La version 0.3.1 ajoute **Comparer les annonces Cardmarket** à côté de Vinted dans la vérification du prix, et un lien de recherche dans les options avancées. La recherche Cardmarket utilise le nom et le numéro de collection avant la barre oblique (par exemple « Dracaufeu 010 » pour « 010/078 »).
+La version 0.4.0 refond tous les écrans autour d’une identité inspirée du Pokédex : bleu nuit, rouge et jaune, logo Poké Ball, cartes illustrées et navigation mobile avec le scan au centre.
+
+- **Accueil** : scan visible, reprise d’un brouillon et compteurs cliquables pour ouvrir les cartes concernées.
+- **Collection** : photos, numéro, langue, avancement et prix, avec recherche et filtres.
+- **Scan** : repères pour le recto et le verso et compteur des deux photos requises.
+- **Vérification** : consultation des deux faces et agrandissement de la photo originale, aussi sur téléphone ; liens Vinted et Cardmarket dans le panneau du prix.
+- **Annonce** : aperçu avec photo, texte modifiable et transfert Vinted bien identifié.
+
+Voir [les principes du design](docs/DESIGN.md).
 
 L’application propose un parcours en **trois écrans : Photos → Vérification → Annonce**, en français, sur ordinateur et téléphone.
 
@@ -64,7 +72,7 @@ git pull --ff-only origin main
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.3.1**.
+Actualiser l’onglet : le pied de page doit afficher **v0.4.0**.
 
 ## Remplir Vinted
 
@@ -92,6 +100,8 @@ npm run test:e2e
 Un Chromium déjà disponible peut être indiqué via `TEST_BROWSER_PATH`. Voir [le rapport de validation](docs/VALIDATION.md) pour les résultats et limites.
 
 ## Documentation
+
+- [Design et parcours utilisateur](docs/DESIGN.md)
 
 - [Guide d’utilisation](docs/UTILISATION.md)
 - [Installation et configuration](docs/INSTALLATION.md)

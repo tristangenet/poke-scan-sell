@@ -1,4 +1,16 @@
-# Validation — version 0.3.1
+# Validation — version 0.4.0
+
+## Refonte Pokémon — 0.4.0
+
+Vérifications du 2 octobre 2026 : construction de production Vite réussie, **37 tests Node** et **55 parcours navigateur Chromium** réussis. La suite couvre la reconnaissance OCR, les champs et brouillons, les sauvegardes, le prix, l’état et le transfert Vinted sur des formulaires de contrôle. Aucun compte Vinted ni annonce réelle n’a été utilisé.
+
+Onze parcours concernent directement l’interface. Quatre nouveaux cas vérifient les compteurs de l’accueil ouvrant la bonne collection, la conservation des archives, puis l’inspection de photos distinctes à 1440, 390 et 320 pixels : changement recto/verso, maintien de la face après sauvegarde du prix, agrandissement de l’original, fermeture par Échap ou bouton, retour du focus et conservation octet par octet des photos enregistrées.
+
+Captures et inspection des vues : accueil vide et rempli, classeur, scan avec photos et emplacements vides, vérification, annonce, paramètres et aide. Pas d’erreur JavaScript observée ; les parcours de sept pages à 320, 390 et 768 pixels ne présentent pas de débordement horizontal. Le scan à 390 pixels a été ajusté après inspection pour que le compteur ne comprime pas le titre et les conseils. Contrôle complémentaire après ajout du défilement de la colonne : sauvegarde accessible à 1024 et 1440 pixels de largeur pour une hauteur de 600 pixels ; liens Vinted/Cardmarket toujours corrects et actualisés après saisie. Contrastes mesurés : 4,75 pour le bouton rouge sur blanc et 4,92 pour le texte secondaire sur blanc.
+
+Le CLI agent-browser a échoué au démarrage de son daemon dans cet environnement. Les vérifications visuelles ont donc utilisé Playwright avec le Chromium disponible. Les illustrations SVG locales se chargent et la construction de production les distribue. Les captures des cartes préparées emploient des données synthétiques dans une session de test isolée ; elles ne peuplent pas la collection de l’utilisateur.
+
+Les contrôles précédents et leurs limites sont conservés ci-dessous.
 
 ## Liens de comparaison Cardmarket — 0.3.1
 

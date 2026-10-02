@@ -2,15 +2,17 @@
 
 ## Préparer une annonce
 
-Depuis **Accueil**, choisissez **Ajouter une carte** ou **Préparer ma première annonce**. Sur téléphone, le bouton **Scanner** reste accessible en bas de l’écran.
+Depuis **Accueil**, choisissez **Ajouter une carte** ou **Préparer ma première annonce**. Sur téléphone, le bouton rouge **Scanner** reste accessible au centre de la navigation du bas. Les compteurs de l’accueil ouvrent directement les cartes à préparer, prêtes ou vendues.
 
 ### 1. Photos
 
-Ajoutez le recto et le verso. Photographiez une carte à la fois, bien droite, avec le nom et le numéro lisibles. Sur ordinateur, vous pouvez déposer une image sur chaque emplacement. Vous pouvez remplacer une photo ou ajouter des détails dans le volet prévu.
+Ajoutez le recto et le verso dans les deux emplacements illustrés. Le compteur passe de **0 / 2** à **2 / 2 photos** lorsque les deux faces sont présentes. Photographiez une carte à la fois, bien droite, avec le nom et le numéro lisibles. Sur ordinateur, vous pouvez déposer une image sur chaque emplacement. Vous pouvez remplacer une photo ou ajouter des détails dans le volet prévu.
 
 Cliquez sur **Préparer ma carte**. Le nom et le numéro sont lus et rapprochés du catalogue. La langue et l’analyse IA optionnelle se trouvent dans **Langue et options d’analyse**. Sans service IA configuré, utilisez la reconnaissance locale.
 
 ### 2. Vérification
+
+Consultez la fiche de la carte à droite sur ordinateur, ou au-dessus du formulaire sur téléphone. Les boutons **Recto** et **Verso** changent la face affichée. Touchez la photo pour l’agrandir ; utilisez la croix ou la touche Échap pour fermer l’aperçu.
 
 Vérifiez le nom et le numéro remplis, puis choisissez l’état de la carte et votre prix. Si la lecture est partielle, seul le champ manquant est à compléter. L’extension et la variante sont facultatives.
 
