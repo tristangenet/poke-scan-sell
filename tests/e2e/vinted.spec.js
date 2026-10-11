@@ -17,6 +17,7 @@ async function controlForm(
   setup = () => {},
   setupArg,
   conditionSelector,
+  transferDraft = draft,
 ) {
   await page.route("https://www.vinted.fr/items/new", (route) =>
     route.fulfill({ contentType: "text/html", body: fixture }),
@@ -60,12 +61,48 @@ async function controlForm(
         },
       };
     },
-    { draft, data },
+    { draft: transferDraft, data },
   );
   await page.evaluate(setup, setupArg);
   if (conditionSelector)
     await page.evaluate(installConditionSelector, conditionSelector);
   await page.addScriptTag({ content: script });
+}
+
+for (const [type, initial] of [
+  ["text", ""],
+  ["number", ""],
+  ["text", "3.00"],
+  ["number", "3.00"],
+]) {
+  test(`Vinted : prix entier sans décimales dans un champ ${type} ${initial ? "prérempli à 3.00" : "vide"}`, async ({
+    page,
+  }) => {
+    const transferDraft = { ...draft, price: 3 };
+    await controlForm(
+      page,
+      ({ type, initial }) => {
+        const input = document.getElementById("price");
+        input.type = type;
+        input.placeholder = "0,00";
+        if (type === "number") input.step = "0.01";
+        input.value = initial;
+      },
+      { type, initial },
+      undefined,
+      transferDraft,
+    );
+    await expect(page.locator("#price")).toHaveValue("3");
+    await expect
+      .poll(() => page.evaluate(() => window.reports.at(-1)?.status))
+      .toBe("filled");
+    expect(
+      await page.evaluate(
+        () => document.getElementById("price").validity.valid,
+      ),
+    ).toBe(true);
+    expect(await page.evaluate(() => window.published)).toBe(0);
+  });
 }
 
 for (const [condition, expected] of [
@@ -433,7 +470,7 @@ test("application : un clic transmet texte et photos, puis une modification bloq
       sendMessage(id, message, reply) {
         window.sent.push(message);
         if (message.type === "ping")
-          return reply({ ok: true, protocol: 1, version: "0.2.9" });
+          return reply({ ok: true, protocol: 1, version: "0.2.10" });
         if (message.type === "prepare")
           return reply({ ok: true, id: "transfer" });
         if (message.type === "status")

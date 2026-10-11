@@ -2,7 +2,7 @@
 
 ## Installer une seule fois
 
-1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.3.0. Le compagnon reste en version 0.2.9 ; cette refonte d’interface ne nécessite pas de réinstallation si cette version est déjà associée à la même adresse.
+1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.4.2. Pour le format du prix entier, utilisez le compagnon 0.2.10 ; mettez à jour une extension existante en suivant les étapes ci-dessous.
 2. Préparer et valider une carte, puis ouvrir **Activer le remplissage Vinted** dans l’annonce.
 3. Cliquer sur **Télécharger l’extension Chrome / Edge**, puis décompresser le ZIP.
 4. Ouvrir `chrome://extensions` ou `edge://extensions` et activer le **mode développeur**.
@@ -17,10 +17,22 @@ Mettre à jour l’application avec `git pull` ne change pas les fichiers de l�
 
 1. Télécharger à nouveau le ZIP depuis l’application et le décompresser.
 2. Remplacer les fichiers du dossier `poke-scan-sell-vinted` déjà chargé par ceux du nouveau ZIP.
-3. Dans `chrome://extensions` ou `edge://extensions`, cliquer sur la flèche circulaire **Recharger** de Poke Scan Sell — Vinted. La version doit être **0.2.9**.
+3. Dans `chrome://extensions` ou `edge://extensions`, cliquer sur la flèche circulaire **Recharger** de Poke Scan Sell — Vinted. La version doit être **0.2.10**.
 4. Recharger les onglets de l’application et de Vinted, puis relancer le transfert depuis l’application.
 
 L’application indique désormais la version connectée et propose la mise à jour si le compagnon est trop ancien. Le panneau dans Vinted affiche aussi sa version.
+
+## Texte de l’annonce
+
+Le titre ne contient plus la langue : par exemple **Pokémon Grodoudou 105/094**. L’extension et la variante, si renseignées, restent dans le titre. La description générée contient exactement ces trois lignes, avec le nom, le numéro, la langue et l’état de la carte :
+
+```text
+Carte Pokémon Grodoudou — 105/094.
+Langue : FR.
+État : Near Mint — quasi neuf.
+```
+
+Les anciens brouillons prêts et non modifiés depuis leur génération sont mis à jour à l’ouverture ou à la restauration de la sauvegarde. Un titre ou une description personnalisé reste conservé ; les annonces déjà publiées, vendues, archivées ou périmées ne sont pas réécrites.
 
 ## Pour chaque carte
 
@@ -28,7 +40,7 @@ Cliquer sur **Remplir mon annonce sur Vinted**. Le compagnon ouvre un nouvel ong
 
 Le remplissage se fait dès que chaque champ est reconnu. Les photos peuvent être envoyées alors que les champs de texte sont encore désactivés ou absents. Les identifiants, noms entre crochets, libellés associés ou de conteneur et certains placeholders de prix sont pris en compte ; deux contrôles aussi plausibles restent signalés comme ambigus. Le champ de recherche du site est exclu. Le message indique les champs remplis et ceux encore attendus, puis un résultat partiel après le délai de vingt secondes pour les sections manquantes. Chaque échange avec l’extension a aussi un délai maximal, trente secondes pour une photo.
 
-Le prix utilise le point décimal par défaut, ou la virgule indiquée par le champ. Pour un champ numérique natif, la valeur utilise toujours un point. Après les événements de saisie et de validation, le compagnon compare le montant exact et vérifie les contraintes natives ainsi que `aria-invalid`. Si le premier format est refusé, l’autre est essayé. Aucun arrondi à l’euro ni suppression des centimes n’est accepté. En cas d’échec, la valeur antérieure est restaurée et le résultat reste partiel. Une modification faite par le vendeur dans le champ interrompt ces nouvelles tentatives et est conservée.
+Les prix entiers sont saisis sans décimales (`3` pour 3 euros). Les prix avec centimes conservent leurs deux décimales. Le prix utilise le point décimal par défaut, ou la virgule indiquée par le champ. Pour un champ numérique natif, la valeur utilise toujours un point. Après les événements de saisie et de validation, le compagnon compare le montant exact et vérifie les contraintes natives ainsi que `aria-invalid`. Si le premier format est refusé, l’autre est essayé. Aucun arrondi à l’euro ni suppression des centimes n’est accepté. En cas d’échec, la valeur antérieure est restaurée et le résultat reste partiel. Une modification faite par le vendeur dans le champ interrompt ces nouvelles tentatives et est conservée.
 
 La catégorie « Cartes Pokémon » ou « Cartes à collectionner » et l’état sont sélectionnés lorsqu’un libellé reconnu est disponible. L’état provient du champ déjà confirmé dans l’application, sans choix supplémentaire :
 
@@ -49,11 +61,13 @@ Un message dans Vinted indique le résultat et les champs à vérifier ou compl�
 - L’annonce a changé dans l’application : la valider et actualiser son texte avant de transférer à nouveau.
 - Le transfert a expiré ou l’onglet a été fermé : relancer depuis l’application.
 - Le compagnon n’est pas reconnu : recharger l’application et vérifier que le dossier a été chargé dans le même navigateur, pour cette même adresse.
-- Un champ manque encore avec le compagnon 0.2.9 : cliquer sur **Copier le diagnostic** dans le panneau Vinted. Le rapport contient la version, les champs reconnus, les identifiants techniques des contrôles et leurs indicateurs de validation, sans valeurs de l’annonce, photos ni informations de connexion. Il aide à adapter les repères. Si la copie est refusée, une zone de texte permet de copier ce rapport manuellement.
+- Un champ manque encore avec le compagnon 0.2.10 : cliquer sur **Copier le diagnostic** dans le panneau Vinted. Le rapport contient la version, les champs reconnus, les identifiants techniques des contrôles et leurs indicateurs de validation, sans valeurs de l’annonce, photos ni informations de connexion. Il aide à adapter les repères. Si la copie est refusée, une zone de texte permet de copier ce rapport manuellement.
 
 Le ZIP des photos et les boutons copier restent disponibles pour un transfert manuel.
 
 ## Validation actuelle
+
+Le compagnon 0.2.10 a été vérifié avec l’application 0.4.2 sur un ancien brouillon Grodoudou : titre sans langue, description exacte sur trois lignes, prix `3`, état et deux photos transmis. Quatre cas couvrent les prix entiers dans des champs texte et numériques, vides ou préremplis avec `3.00`. Les 65 parcours navigateur passent ; voir [VALIDATION.md](VALIDATION.md). Le compagnon saisit le format demandé ; un composant du site peut toutefois reformater l’affichage après saisie.
 
 Le texte, le prix, les photos et la file de transfert ont été testés sur des formulaires de contrôle, avec les APIs de l’extension simulées. Le blocage de la version 0.2.6 a été reproduit avec des champs désactivés jusqu’à l’ajout des photos : aucun texte ni photo n’était transféré. Le même formulaire reçoit les trois champs et les deux originaux avec 0.2.7. Ce test ne confirme pas la structure exacte du formulaire utilisateur. Le chargement complet du compagnon dans Chrome et le formulaire réel d’un compte Vinted connecté restent à valider. Des changements de structure ou de champs sur Vinted peuvent demander une adaptation des repères du formulaire.
 

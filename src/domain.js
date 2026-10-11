@@ -173,6 +173,21 @@ export function readyErrors(c) {
 }
 export function generateListing(c) {
   return {
+    title: [`Pokémon ${c.name} ${c.number}`, c.set.trim(), c.variant.trim()]
+      .filter(Boolean)
+      .join(" — "),
+    description: [
+      `Carte Pokémon ${c.name} — ${c.number}.`,
+      `Langue : ${c.language.toUpperCase()}.`,
+      `État : ${CONDITIONS[c.condition] || c.condition}.`,
+    ].join("\n"),
+  };
+}
+
+// Recognize only unedited text produced by the previous template. Existing
+// custom text and published listings must keep their original contents.
+function legacyGeneratedListing(c) {
+  return {
     title: [
       `Pokémon ${c.name} ${c.number}`,
       c.set.trim(),
@@ -245,6 +260,24 @@ export function migrateCard(c) {
   }
   delete c.packaging;
   delete c.vintedCondition;
+  if (
+    c.title &&
+    !["Publiée", "Vendue", "Archivée"].includes(c.status) &&
+    c.listingFingerprint === listingFingerprint(c)
+  ) {
+    const previous = legacyGeneratedListing(c);
+    const current = generateListing(c);
+    let updated = false;
+    for (const key of ["title", "description"])
+      if (c[key] === previous[key] && c[key] !== current[key]) {
+        c[key] = current[key];
+        updated = true;
+      }
+    if (updated) {
+      delete c.vintedTransferId;
+      delete c.vintedTransferMessage;
+    }
+  }
   return c;
 }
 

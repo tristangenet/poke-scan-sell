@@ -4,9 +4,11 @@ De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses inf
 
 ![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
 
-## Version 0.4.1 — photos HEIC et collection Pokémon
+## Version 0.4.2 — annonces Vinted simplifiées
 
-La version 0.4.1 accepte les photos **HEIC / HEIF**, y compris les fichiers `.HEIC` et ceux sans type MIME. Elles sont converties automatiquement en JPEG sur l’appareil, sans conversion manuelle, pour l’aperçu, l’OCR, les sauvegardes, le ZIP et le compagnon Vinted. La résolution est conservée. Les photos JPEG / PNG / WebP conservent leurs octets d’origine.
+La version 0.4.2 génère une description sur trois lignes (carte, langue et état), retire la langue du titre et envoie un prix entier comme `3` sans décimales inutiles. Les anciens brouillons dont le texte est encore celui du générateur sont adaptés à l’ouverture ; les corrections personnelles sont conservées.
+
+Depuis la version 0.4.1, l’application accepte les photos **HEIC / HEIF**, y compris les fichiers `.HEIC` et ceux sans type MIME. Elles sont converties automatiquement en JPEG sur l’appareil, sans conversion manuelle, pour l’aperçu, l’OCR, les sauvegardes, le ZIP et le compagnon Vinted. La résolution est conservée. Les photos JPEG / PNG / WebP conservent leurs octets d’origine.
 
 La version 0.4.0 a refondu tous les écrans autour d’une identité inspirée du Pokédex : bleu nuit, rouge et jaune, logo Poké Ball, cartes illustrées et navigation mobile avec le scan au centre.
 
@@ -28,7 +30,7 @@ L’accueil explique les étapes et propose de reprendre un brouillon. **Mes car
 
 La saisie est enregistrée automatiquement après une courte pause et à la sortie d’un champ. Le champ actif et les volets ouverts restent en place. Le rechargement reprend la page et la carte en cours. Les erreurs apparaissent à côté des champs à compléter. Les réglages techniques, outils manuels et options avancées sont accessibles dans des volets secondaires.
 
-Cette version conserve les cartes et sauvegardes existantes. **Le compagnon Vinted reste en version 0.2.9** : aucune réinstallation n’est nécessaire si cette version est déjà chargée et associée à la même adresse.
+Cette version conserve les cartes et sauvegardes existantes. **Le compagnon Vinted passe en version 0.2.10** pour le format du prix. Téléchargez le nouveau ZIP depuis l’application, remplacez les fichiers dans le dossier de l’extension déjà chargée et cliquez sur **Recharger** dans `chrome://extensions` ou `edge://extensions`. Actualisez ensuite l’application et Vinted.
 
 ## Ce qui fonctionne
 
@@ -75,7 +77,7 @@ npm ci
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.4.1**.
+Actualiser l’onglet : le pied de page doit afficher **v0.4.2**.
 
 ## Remplir Vinted
 

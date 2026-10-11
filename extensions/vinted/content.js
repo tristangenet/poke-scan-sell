@@ -8,7 +8,7 @@
   const createPage = () => /^\/items\/new\/?$/.test(location.pathname);
   const visible = (el) => el && el.getClientRects().length > 0 && !el.disabled;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-  const version = "0.2.9";
+  const version = "0.2.10";
   const core = ["title", "description", "price"];
   const names = {
     title: "titre",
@@ -217,10 +217,12 @@
       el.getAttribute("aria-invalid") !== "true"
     );
   }
+  const priceText = (amount) =>
+    Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
   function priceFormats(el, amount) {
-    const dot = amount.toFixed(2),
+    const dot = priceText(amount),
       comma = dot.replace(".", ",");
-    if (el.type === "number") return [dot];
+    if (el.type === "number" || Number.isInteger(amount)) return [dot];
     const hint = (el.getAttribute("placeholder") || "").match(
       /[.,]\d{1,2}/,
     )?.[0][0];
@@ -297,7 +299,7 @@
         if (userEdited) return { accepted: false, reason: "user-edit" };
         const current = field("price");
         if (!current) return { accepted: false, reason: "not-found" };
-        const value = current.type === "number" ? amount.toFixed(2) : format;
+        const value = current.type === "number" ? priceText(amount) : format;
         if (current.maxLength > 0 && value.length > current.maxLength) continue;
         show("Saisie et validation du prix…");
         setValue(current, value);
@@ -753,8 +755,17 @@
         }
         for (const name of core) {
           const input = field(name);
-          if (!input || same(input, name, draft)) continue;
+          if (!input) continue;
           const last = writes.get(name);
+          // Compact an equivalent prefilled price once, including "3.00".
+          // Do not keep rewriting a currency control that normalizes on blur.
+          const compactPrice =
+            name === "price" &&
+            Number.isInteger(draft.price) &&
+            numeric(valueOf(input)) === draft.price &&
+            valueOf(input).trim() !== String(draft.price) &&
+            !last;
+          if (same(input, name, draft) && !compactPrice) continue;
           if (last?.el === input && last.count >= 3) continue;
           if (name === "price") {
             const result = await fillPrice(input, draft.price);

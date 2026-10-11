@@ -1,4 +1,4 @@
-# Architecture — version 0.4.1
+# Architecture — version 0.4.2
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -37,7 +37,13 @@ La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistr
 
 La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
 
-Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.9 ; la version de l’interface 0.4.1 ne change pas le protocole ni l’origine autorisée.
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.4.2 ne change pas le protocole ni l’origine autorisée.
+
+## Texte et prix d’annonce — 0.4.2
+
+Le générateur produit trois lignes : nom et numéro, langue, état détaillé. La composante langue est retirée du titre, qui conserve l’extension et la variante renseignées. `migrateCard` compare les champs aux anciens textes générés uniquement lorsque l’empreinte de carte est encore valide et que l’annonce n’est ni publiée, vendue ni archivée. Chaque champ personnalisé est conservé indépendamment ; une mise à jour du texte supprime la référence à l’ancien transfert Vinted sans invalider les faits déjà confirmés. La restauration applique la même adaptation.
+
+Le compagnon 0.2.10 utilise une chaîne sans décimales pour un montant entier, dans les champs texte et numériques. Une valeur équivalente déjà présente, comme `3.00`, est compactée une fois ; un composant qui reformate à la perte de focus ne déclenche pas de boucle de réécriture. Les centimes et la validation du montant exact sont conservés. L’application exige cette version avant un nouveau transfert.
 
 ## Inspection de la carte — interface 0.4.0
 

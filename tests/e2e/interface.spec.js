@@ -55,8 +55,9 @@ test("première utilisation : navigation explicite, aide au clavier et reprise d
     page.getByRole("button", { name: "Préparer ma carte", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Accueil", exact: true }).click();
+  await expect(page.locator("#app")).not.toHaveAttribute("aria-busy", "true");
   await page.getByRole("button", { name: "Scanner", exact: true }).click();
-  expect(new URL(page.url()).hash).toBe(route);
+  await expect.poll(() => new URL(page.url()).hash).toBe(route);
   await page.getByRole("button", { name: "Aide", exact: true }).click();
   await expect(page.locator("main h1")).toBeFocused();
   const skip = page.getByRole("link", { name: "Aller au contenu" });

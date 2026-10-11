@@ -141,7 +141,7 @@ test("une annonce peut être créée sans extension ni variante, avec le nom et 
   };
   assert.deepEqual(readyErrors(c), []);
   const listing = generateListing(c);
-  assert.equal(listing.title, "Pokémon Dracaufeu 4/102 — FR");
+  assert.equal(listing.title, "Pokémon Dracaufeu 4/102");
   assert.doesNotMatch(listing.description, /Extension|Variante|\n\n/);
   for (const field of ["name", "number"])
     assert.ok(readyErrors({ ...c, [field]: " " }).length > 0);
@@ -149,6 +149,96 @@ test("une annonce peut être créée sans extension ni variante, avec le nom et 
 });
 test("OCR conserve préfixes et numéro complet", () => {
   assert.equal(parseOCR("Pikachu\nTG01/TG30").number, "TG01/TG30");
+});
+
+test("annonce : trois lignes exactes et langue absente du titre", () => {
+  const c = {
+    ...card,
+    name: "Grodoudou",
+    number: "105/094",
+    set: "",
+    variant: "",
+    condition: "NM",
+  };
+  assert.deepEqual(generateListing(c), {
+    title: "Pokémon Grodoudou 105/094",
+    description:
+      "Carte Pokémon Grodoudou — 105/094.\nLangue : FR.\nÉtat : Near Mint — quasi neuf.",
+  });
+  const other = generateListing({
+    ...c,
+    set: "Extension",
+    variant: "Holo",
+    language: "en",
+    condition: "EX",
+    defects: ["Coins usés"],
+    defectNotes: "Un petit point blanc",
+  });
+  assert.equal(other.title, "Pokémon Grodoudou 105/094 — Extension — Holo");
+  assert.equal(
+    other.description,
+    "Carte Pokémon Grodoudou — 105/094.\nLangue : EN.\nÉtat : Excellent — usure légère.",
+  );
+});
+
+test("ancien texte généré : mise à jour du brouillon sans écraser les corrections, publications ou annonces périmées", () => {
+  const description =
+    "Carte Pokémon Grodoudou — 105/094.\nLangue : FR.\nÉtat évalué par le vendeur : Near Mint — quasi neuf.\nDéfauts constatés : aucun défaut signalé après vérification du vendeur.\nLes photos montrent l’exemplaire proposé à la vente.";
+  const previous = {
+    ...card,
+    name: "Grodoudou",
+    number: "105/094",
+    set: "",
+    variant: "",
+    condition: "NM",
+    identityConfirmed: true,
+    conditionConfirmed: true,
+    photos: [
+      { id: "front", side: "front" },
+      { id: "back", side: "back" },
+    ],
+    defects: [],
+    defectNotes: "",
+    price: 3,
+    status: "Prête",
+    title: "Pokémon Grodoudou 105/094 — FR",
+    description,
+    vintedTransferId: "old-transfer",
+    vintedTransferMessage: "Ancienne annonce transférée",
+  };
+  previous.listingFingerprint = listingFingerprint(previous);
+  const updated = migrateCard(structuredClone(previous));
+  assert.equal(updated.title, "Pokémon Grodoudou 105/094");
+  assert.equal(
+    updated.description,
+    "Carte Pokémon Grodoudou — 105/094.\nLangue : FR.\nÉtat : Near Mint — quasi neuf.",
+  );
+  assert.equal(updated.listingFingerprint, previous.listingFingerprint);
+  assert.equal(updated.listingFingerprint, listingFingerprint(updated));
+  assert.equal(updated.vintedTransferId, undefined);
+  assert.equal(updated.vintedTransferMessage, undefined);
+  const customDescription = migrateCard({
+    ...structuredClone(previous),
+    description: "Ma description corrigée.",
+  });
+  assert.equal(customDescription.description, "Ma description corrigée.");
+  assert.equal(customDescription.title, updated.title);
+  const customTitle = migrateCard({
+    ...structuredClone(previous),
+    title: "Mon titre personnalisé.",
+  });
+  assert.equal(customTitle.title, "Mon titre personnalisé.");
+  assert.equal(customTitle.description, updated.description);
+  for (const changes of [
+    { status: "Publiée" },
+    { status: "Vendue" },
+    { status: "Archivée" },
+    { price: 5 },
+  ]) {
+    const unchanged = migrateCard({ ...structuredClone(previous), ...changes });
+    assert.equal(unchanged.title, previous.title);
+    assert.equal(unchanged.description, previous.description);
+  }
 });
 test("liens externes sécurisés et domaine Vinted strict", () => {
   assert.equal(safeUrl("javascript:alert(1)"), null);

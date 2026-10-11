@@ -24,7 +24,7 @@ Cliquez sur **Valider ma carte et créer l’annonce**. Les champs incomplets so
 
 ### 3. Annonce
 
-Relisez l’aperçu. Pour une correction de texte, ouvrez **Modifier le titre ou la description**. Pour corriger l’état ou le prix, choisissez **Modifier les informations**, puis validez à nouveau. Une actualisation demandera votre accord avant de remplacer votre texte personnalisé.
+La description générée tient sur trois lignes (carte, langue et état). Le titre ne contient plus « — FR » ; sur Vinted, un prix entier est saisi comme `3`, sans `3.00`. Relisez l’aperçu. Pour une correction de texte, ouvrez **Modifier le titre ou la description**. Pour corriger l’état ou le prix, choisissez **Modifier les informations**, puis validez à nouveau. Une actualisation demandera votre accord avant de remplacer votre texte personnalisé.
 
 Cliquez sur **Remplir mon annonce sur Vinted**. Installez le compagnon Chrome / Edge une seule fois si ce n’est pas déjà fait. Sur Vinted, vérifiez le résultat et les éventuels champs restants, puis publiez votre annonce. Le détail de l’installation est dans [le guide Vinted](VINTED.md).
 

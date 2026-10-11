@@ -1,4 +1,16 @@
-# Validation — version 0.4.1
+# Validation — version 0.4.2
+
+## Format des annonces Vinted — 0.4.2
+
+Vérifications du 11 octobre 2026 : construction de production Vite réussie, **39 tests Node** et **65 parcours navigateur Chromium 153** réussis. Les parcours d’import HEIC, de reconnaissance OCR, de sauvegarde et de transfert restent inclus dans la suite.
+
+Le texte généré est vérifié exactement : titre sans langue et description sur trois lignes avec nom/numéro, langue et état détaillé. Les tests de migration couvrent les anciens textes générés, la conservation indépendante des champs personnalisés et l’absence de changement pour les annonces publiées, vendues, archivées ou périmées. L’empreinte des faits reste valide ; la référence à un ancien transfert est retirée lorsque le texte est actualisé.
+
+Un parcours part d’un ancien brouillon Grodoudou 105/094, avec le titre contenant FR, l’ancienne description et un prix enregistré comme `3.00`. L’application actualise le texte et le transmet par les scripts réels du compagnon et sa file IndexedDB. Le formulaire de contrôle reçoit le titre sans « — FR », les trois lignes demandées, le prix `3`, les deux photos et l’état Très bon état, sans clic Publier.
+
+Quatre nouveaux cas du compagnon vérifient le montant entier dans les champs texte et numériques, vides ou contenant déjà `3.00`. Les régressions sur les centimes, les séparateurs, les montants refusés et les saisies du vendeur passent également. Le ZIP distribue le compagnon **0.2.10** ; une ancienne version demande une mise à jour avant un nouveau transfert.
+
+Le catalogue, les APIs Chrome et les formulaires Vinted sont simulés dans ces parcours. Aucun compte Vinted ni annonce réelle n’a été utilisé. Un composant Vinted qui reformate lui-même une valeur après saisie peut imposer son affichage ; le compagnon saisit `3` et continue à vérifier le montant exact.
 
 ## Import HEIC / HEIF — 0.4.1
 

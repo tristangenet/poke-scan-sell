@@ -179,7 +179,7 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
     .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
     .click();
   await expect(page.locator('[data-field="title"]')).toHaveValue(
-    "Pokémon Dracaufeu 4/102 — FR",
+    "Pokémon Dracaufeu 4/102",
   );
   await expect(page.locator('[data-field="description"]')).not.toHaveValue(
     /Extension|Variante/,

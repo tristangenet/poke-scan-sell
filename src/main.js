@@ -1379,7 +1379,7 @@ function validateBackup(data) {
           "Exemplaire restauré depuis une sauvegarde, sous un nouvel identifiant",
       },
     ];
-    return c;
+    return migrateCard(c);
   });
 }
 try {
