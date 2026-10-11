@@ -24,7 +24,7 @@ import {
   recognizePhoto,
   resolveCatalogue,
 } from "./catalog.js";
-import { readPhoto, download } from "./photos.js";
+import { readPhoto, download, PHOTO_ACCEPT } from "./photos.js";
 import {
   checkVintedHelper,
   makeVintedDraft,
@@ -301,11 +301,11 @@ function photosView() {
     .map((side) => {
       const p = active.photos.find((p) => p.side === side);
       const label = side === "front" ? "recto" : "verso";
-      return `<div class="photo-slot ${p ? "has-photo" : ""}" data-side="${side}"><div class="photo-slot-label"><span>${side === "front" ? "1" : "2"}</span><strong>${side === "front" ? "Le recto" : "Le verso"}</strong>${p ? `<span class="photo-done">${icon("check")} Ajouté</span>` : ""}</div>${p ? `<img src="${esc(p.data)}" alt="${side === "front" ? "Recto" : "Verso"} de la carte"><button type="button" class="remove-photo" data-action="remove-photo" data-id="${p.id}" aria-label="Supprimer la photo ${label}">×</button>` : `<div class="photo-guide">${scanGuide(side)}<p>${side === "front" ? "Le nom et le numéro doivent être lisibles." : "Gardez les coins et les bords visibles."}</p></div>`}<label class="button secondary upload-control">${icon(p ? "edit" : "plus")}${p ? " Remplacer" : " Ajouter une photo"}<input class="photo-input sr-only" type="file" data-side="${side}" accept="image/jpeg,image/png,image/webp" capture="environment" aria-label="Ajouter ou remplacer le ${label}"></label><small class="drop-hint">${p ? "" : "ou déposez une image ici"}</small></div>`;
+      return `<div class="photo-slot ${p ? "has-photo" : ""}" data-side="${side}"><div class="photo-slot-label"><span>${side === "front" ? "1" : "2"}</span><strong>${side === "front" ? "Le recto" : "Le verso"}</strong>${p ? `<span class="photo-done">${icon("check")} Ajouté</span>` : ""}</div>${p ? `<img src="${esc(p.data)}" alt="${side === "front" ? "Recto" : "Verso"} de la carte"><button type="button" class="remove-photo" data-action="remove-photo" data-id="${p.id}" aria-label="Supprimer la photo ${label}">×</button>` : `<div class="photo-guide">${scanGuide(side)}<p>${side === "front" ? "Le nom et le numéro doivent être lisibles." : "Gardez les coins et les bords visibles."}</p></div>`}<label class="button secondary upload-control">${icon(p ? "edit" : "plus")}${p ? " Remplacer" : " Ajouter une photo"}<input class="photo-input sr-only" type="file" data-side="${side}" accept="${PHOTO_ACCEPT}" capture="environment" aria-label="Ajouter ou remplacer le ${label}"></label><small class="drop-hint">${p ? "" : "ou déposez une image ici"}</small></div>`;
     })
     .join(
       "",
-    )}</div><details class="photo-extras"><summary>Ajouter des détails ou consulter les conseils photo</summary><p>Montrez les défauts dans les photos de détail : un coin usé, une rayure ou une pliure.</p><label class="button secondary upload-control">${icon("plus")} Ajouter un détail<input class="photo-input sr-only" type="file" data-side="detail" accept="image/jpeg,image/png,image/webp" aria-label="Ajouter une photo de détail"></label><p class="muted">JPEG, PNG ou WebP. Jusqu’à 6 photos de 10 Mo chacune.</p></details><div class="detail-photos">${active.photos
+    )}</div><details class="photo-extras"><summary>Ajouter des détails ou consulter les conseils photo</summary><p>Montrez les défauts dans les photos de détail : un coin usé, une rayure ou une pliure.</p><label class="button secondary upload-control">${icon("plus")} Ajouter un détail<input class="photo-input sr-only" type="file" data-side="detail" accept="${PHOTO_ACCEPT}" aria-label="Ajouter une photo de détail"></label><p class="muted">HEIC / HEIF, JPEG, PNG ou WebP. Jusqu’à 6 photos de 10 Mo chacune.</p></details><div class="detail-photos">${active.photos
     .filter((p) => p.side === "detail")
     .map(
       (p) =>
@@ -316,7 +316,7 @@ function photosView() {
     .map((w) => `<p class="notice amber">${esc(w)}</p>`)
     .join(
       "",
-    )}<div class="photo-privacy">${icon("shield")} Vos photos originales sont conservées, avec les défauts visibles.</div></section>`;
+    )}<div class="photo-privacy">${icon("shield")} Les photos HEIC sont converties automatiquement en JPEG sur cet appareil. Vos photos gardent leurs défauts visibles.</div></section>`;
 }
 function identityView() {
   return `<div class="panel"><div class="eyebrow">ÉTAPE 02</div><h2>Identifiez votre carte.</h2><p>Lisez le texte de la photo ou recherchez dans le catalogue, puis confirmez la référence.</p>${btn(icon("scan") + " Lire la photo avec l’OCR", "ocr", "primary", !active.photos.some((p) => p.side === "front") ? "disabled" : "")}<p class="muted">Lecture locale du texte · premier chargement des modèles nécessaire · pas de reconnaissance d’authenticité.</p><div id="job-status" role="status"></div><div class="form-grid">${input("Nom de la carte", "name", active.name)}${input("Numéro (ex. 4/102)", "number", active.number)}${select(
@@ -373,7 +373,7 @@ function listingView(compact = false) {
   const generationErrors = readyErrors(active);
   const hasListing = active.title || active.listingFingerprint;
   const fields = `${input("Titre de l’annonce", "title", active.title, "text", 'maxlength="500"')}<label class="field">Description<textarea data-field="description" rows="8" maxlength="20000">${esc(active.description)}</textarea></label>`;
-  return `<section class="panel listing-panel"><div class="eyebrow">${compact ? "APERÇU DE VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2 id="stage-title" tabindex="-1">${compact ? "Votre annonce" : "Votre annonce, prête à être relue."}</h2>${errors.length ? `<div class="notice amber" role="alert"><strong>Avant d’envoyer l’annonce</strong><ul>${errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${hasListing ? `<div class="listing-fields">${compact ? `<div class="listing-preview"><div class="listing-preview-header">${cardVisual(active, true)}<div><span class="eyebrow">APERÇU VINTED</span><h3 id="listing-preview-title">${esc(active.title)}</h3></div></div><p id="listing-preview-description">${esc(active.description)}</p><div class="listing-price"><span>Prix de vente</span><strong>${money(+active.price)}</strong></div></div><details class="edit-listing"><summary>${icon("edit")} Modifier le titre ou la description</summary>${fields}</details>` : fields}${vintedTransferView(errors)}<details class="manual-tools"><summary>Copier le texte ou télécharger les photos</summary><p>Retrouvez vos originaux et votre texte pour les utiliser ailleurs.</p><a class="inline-link" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted pour un transfert manuel ↗</a><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div></details><details class="listing-tracking" ${["Publiée", "Vendue"].includes(active.status) ? "open" : ""}><summary>Suivre cette annonce</summary><p>Après publication, ajoutez le lien Vinted et confirmez son statut ici.</p>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="field-help">Le suivi est déclaré par vous, après vérification sur Vinted.</p></details></div>` : ""}<details class="card-admin"><summary>Historique et gestion de la carte</summary>${
+  return `<section class="panel listing-panel"><div class="eyebrow">${compact ? "APERÇU DE VOTRE ANNONCE" : "ÉTAPE 05"}</div><h2 id="stage-title" tabindex="-1">${compact ? "Votre annonce" : "Votre annonce, prête à être relue."}</h2>${errors.length ? `<div class="notice amber" role="alert"><strong>Avant d’envoyer l’annonce</strong><ul>${errors.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></div>` : ""}${compact ? "" : btn(active.title ? "Régénérer le texte" : "Générer l’annonce", "generate", "primary", generationErrors.length ? "disabled" : "")}${hasListing ? `<div class="listing-fields">${compact ? `<div class="listing-preview"><div class="listing-preview-header">${cardVisual(active, true)}<div><span class="eyebrow">APERÇU VINTED</span><h3 id="listing-preview-title">${esc(active.title)}</h3></div></div><p id="listing-preview-description">${esc(active.description)}</p><div class="listing-price"><span>Prix de vente</span><strong>${money(+active.price)}</strong></div></div><details class="edit-listing"><summary>${icon("edit")} Modifier le titre ou la description</summary>${fields}</details>` : fields}${vintedTransferView(errors)}<details class="manual-tools"><summary>Copier le texte ou télécharger les photos</summary><p>Retrouvez vos photos et votre texte pour les utiliser ailleurs.</p><a class="inline-link" href="https://www.vinted.fr/items/new" target="_blank" rel="noopener noreferrer">Ouvrir Vinted pour un transfert manuel ↗</a><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", errors.length ? "disabled" : "")}</div></details><details class="listing-tracking" ${["Publiée", "Vendue"].includes(active.status) ? "open" : ""}><summary>Suivre cette annonce</summary><p>Après publication, ajoutez le lien Vinted et confirmez son statut ici.</p>${input("Lien de votre annonce publiée", "listingUrl", active.listingUrl, "url", 'placeholder="https://www.vinted.fr/items/…"')}<div class="actions">${btn("Confirmer la publication manuellement", "published", "secondary", errors.length ? "disabled" : "")}${btn("Marquer comme vendue", "sold", "text-button", active.status !== "Publiée" ? "disabled" : "")}</div><p class="field-help">Le suivi est déclaré par vous, après vérification sur Vinted.</p></details></div>` : ""}<details class="card-admin"><summary>Historique et gestion de la carte</summary>${
     active.history
       .slice()
       .reverse()
@@ -419,7 +419,7 @@ function openPhoto(side) {
     });
   }
   const label = side === "back" ? "Verso" : "Recto";
-  dialog.innerHTML = `<div class="photo-viewer-header"><div><span class="eyebrow">VOTRE PHOTO ORIGINALE</span><h2 id="photo-viewer-title">${label} · ${esc(active.name || "Votre carte")}</h2></div><form method="dialog"><button type="submit" class="photo-viewer-close" aria-label="Fermer la photo">×</button></form></div><div class="photo-viewer-image"><img src="${esc(photo.data)}" alt="${label} de ${esc(active.name || "la carte")}"></div><p class="photo-viewer-hint">Vérifiez les coins, les bords et la surface de votre carte.</p>`;
+  dialog.innerHTML = `<div class="photo-viewer-header"><div><span class="eyebrow">VOTRE PHOTO</span><h2 id="photo-viewer-title">${label} · ${esc(active.name || "Votre carte")}</h2></div><form method="dialog"><button type="submit" class="photo-viewer-close" aria-label="Fermer la photo">×</button></form></div><div class="photo-viewer-image"><img src="${esc(photo.data)}" alt="${label} de ${esc(active.name || "la carte")}"></div><p class="photo-viewer-hint">Vérifiez les coins, les bords et la surface de votre carte.</p>`;
   dialog.showModal();
 }
 
@@ -1025,7 +1025,7 @@ app.addEventListener("click", async (event) => {
           await zip.generateAsync({ type: "blob" }),
           `annonce-${active.id.slice(0, 8)}.zip`,
         );
-        toast("Photos originales et annonce téléchargées.");
+        toast("Photos et annonce téléchargées.");
       });
       return;
     }
@@ -1128,7 +1128,9 @@ app.addEventListener("change", (event) =>
           (side === "detail" || !active.photos.some((p) => p.side === side))
         )
           throw new Error("Maximum 6 photos par carte.");
-        const photo = await readPhoto(el.files[0], side);
+        const photo = await readPhoto(el.files[0], side, (message) =>
+          toast(message),
+        );
         if (side !== "detail")
           active.photos = active.photos.filter((p) => p.side !== side);
         active.photos.push(photo);
@@ -1138,8 +1140,14 @@ app.addEventListener("change", (event) =>
         invalidateListing();
         await persist();
         render();
-        toast("Photo enregistrée.");
+        toast(
+          photo.convertedFrom
+            ? "Photo HEIC convertie et enregistrée."
+            : "Photo enregistrée.",
+        );
       });
+      // Allow retrying the same file after a read/conversion error.
+      el.value = "";
       return;
     }
     if (el.id === "restore") {

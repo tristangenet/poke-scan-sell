@@ -1,6 +1,6 @@
 {
   "name": "poke-scan-sell",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Photographier une carte Pokémon, vérifier ses informations et préparer simplement sa vente sur Vinted.",
   "directories": {
     "doc": "docs"
@@ -31,6 +31,7 @@
   "dependencies": {
     "@tesseract.js-data/eng": "^1.0.0",
     "@tesseract.js-data/fra": "^1.0.0",
+    "heic-to": "1.6.6",
     "jszip": "^3.10.2",
     "tesseract.js": "^7.0.0",
     "vite": "^8.3.1"

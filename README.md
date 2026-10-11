@@ -4,9 +4,11 @@ De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses inf
 
 ![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
 
-## Version 0.4.0 — le compagnon de votre collection Pokémon
+## Version 0.4.1 — photos HEIC et collection Pokémon
 
-La version 0.4.0 refond tous les écrans autour d’une identité inspirée du Pokédex : bleu nuit, rouge et jaune, logo Poké Ball, cartes illustrées et navigation mobile avec le scan au centre.
+La version 0.4.1 accepte les photos **HEIC / HEIF**, y compris les fichiers `.HEIC` et ceux sans type MIME. Elles sont converties automatiquement en JPEG sur l’appareil, sans conversion manuelle, pour l’aperçu, l’OCR, les sauvegardes, le ZIP et le compagnon Vinted. La résolution est conservée. Les photos JPEG / PNG / WebP conservent leurs octets d’origine.
+
+La version 0.4.0 a refondu tous les écrans autour d’une identité inspirée du Pokédex : bleu nuit, rouge et jaune, logo Poké Ball, cartes illustrées et navigation mobile avec le scan au centre.
 
 - **Accueil** : scan visible, reprise d’un brouillon et compteurs cliquables pour ouvrir les cartes concernées.
 - **Collection** : photos, numéro, langue, avancement et prix, avec recherche et filtres.
@@ -20,7 +22,7 @@ L’application propose un parcours en **trois écrans : Photos → Vérificatio
 
 1. **Photos** : ajoutez le recto et le verso, puis cliquez sur **Préparer ma carte**. L’OCR lit le nom et le numéro et recherche la référence dans le catalogue.
 2. **Vérification** : contrôlez les informations, choisissez l’état et le prix. L’extension et la variante sont facultatives, dans un volet replié. Une validation prépare l’annonce.
-3. **Annonce** : relisez l’aperçu, ajustez le texte si nécessaire et cliquez sur **Remplir mon annonce sur Vinted**. Le compagnon envoie le texte, les originaux, le prix et l’état. Vous vérifiez le formulaire Vinted avant de publier.
+3. **Annonce** : relisez l’aperçu, ajustez le texte si nécessaire et cliquez sur **Remplir mon annonce sur Vinted**. Le compagnon envoie le texte, les photos, le prix et l’état. Vous vérifiez le formulaire Vinted avant de publier.
 
 L’accueil explique les étapes et propose de reprendre un brouillon. **Mes cartes** regroupe les cartes à préparer, prêtes, en vente, vendues et archivées, avec recherche sans distinction d’accents et tri. **Paramètres** regroupe le compagnon Vinted et les sauvegardes. **Aide** explique les étapes et les questions fréquentes.
 
@@ -30,7 +32,7 @@ Cette version conserve les cartes et sauvegardes existantes. **Le compagnon Vint
 
 ## Ce qui fonctionne
 
-- Import/capture recto, verso et détails, ou glisser-déposer sur ordinateur ; originaux JPEG/PNG/WebP conservés.
+- Import/capture recto, verso et détails, ou glisser-déposer sur ordinateur ; HEIC/HEIF convertis automatiquement en JPEG, originaux JPEG/PNG/WebP conservés (6 photos, 10 Mo par fichier).
 - OCR Tesseract.js exécuté dans le navigateur et recherche TCGdex avec reprises automatiques.
 - Nom et numéro préremplis quand la lecture permet de les identifier ; corrections manuelles possibles.
 - Extension et variante facultatives. Une édition ambiguë conserve le nom et le numéro sans attribuer le prix d’une autre édition.
@@ -69,10 +71,11 @@ Dans un Codespace, arrêter le serveur avec `Ctrl+C`, puis mettre à jour et rel
 
 ```bash
 git pull --ff-only origin main
+npm ci
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.4.0**.
+Actualiser l’onglet : le pied de page doit afficher **v0.4.1**.
 
 ## Remplir Vinted
 

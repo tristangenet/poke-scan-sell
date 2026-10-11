@@ -1,4 +1,4 @@
-# Architecture — version 0.3.0
+# Architecture — version 0.4.1
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -14,10 +14,18 @@ Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 2
 | src/catalog-client.js | Reprises, cache et limite de concurrence des requêtes catalogue                   |
 | src/ocr.js            | Copies de lecture, zones agrandies et reprises OCR bornées                        |
 | src/recognition.js    | Extraction de nom/numéro et résolution catalogue                                  |
-| src/photos.js         | Import d'originaux, contrôles d'éclairage/résolution, téléchargements             |
+| src/photos.js         | Import et conversion HEIC, contrôles d’éclairage/résolution, téléchargements      |
 | src/vision.js         | Appel du serveur IA, sans clé fournisseur                                         |
 | server/index.js       | Fichiers construits, contrôle d'accès/origine, limites, API                       |
 | server/vision.js      | Validation photos et appel Responses structuré                                    |
+
+## Import HEIC / HEIF
+
+`src/photos.js` accepte les types MIME HEIC/HEIF et leurs variantes `-sequence`, ou les extensions `.heic` / `.heif` sans distinction de casse, même sans type MIME. La limite de 10 Mo est vérifiée avant le décodage. La lecture native est tentée ; sinon `heic-to/csp` 1.6.6 est chargé à la demande et utilise son décodeur local dans un worker. Aucun service de conversion ni CDN n’est appelé. La [licence du décodeur](../public/licenses/heic-to.txt) est distribuée avec l’application ; son code est disponible dans le paquet npm verrouillé et dans le [dépôt heic-to](https://github.com/hoppergee/heic-to). La première image décodée est utilisée pour une photo.
+
+Le JPEG conserve les dimensions décodées, avec une qualité de 0,95 ; des qualités de 0,9 à 0,8 sont essayées si le résultat dépasse 10 Mo. Un fichier qui reste trop grand est rejeté. Les bitmaps et canevas de conversion sont libérés après traitement. Le JPEG est enregistré avec un nom `.jpg`, `type: image/jpeg` et une URL de données JPEG cohérente ; `convertedFrom` indique le nom du fichier d’import. Les formats JPEG/PNG/WebP ne sont pas réencodés. Le remplacement d’une face se fait uniquement après une lecture réussie.
+
+Les contrôles OCR, IA, sauvegarde, ZIP et Vinted reçoivent ainsi des photos dans les formats existants. Le schéma IndexedDB et le protocole du compagnon restent inchangés. Le module de conversion de production est séparé et chargé uniquement si le décodage natif HEIC échoue (environ 3,15 Mo, 0,79 Mo compressé).
 
 ## Navigation et saisie
 
@@ -29,7 +37,7 @@ La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistr
 
 La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
 
-Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.9 ; la version de l’interface 0.4.0 ne change pas le protocole ni l’origine autorisée.
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.9 ; la version de l’interface 0.4.1 ne change pas le protocole ni l’origine autorisée.
 
 ## Inspection de la carte — interface 0.4.0
 

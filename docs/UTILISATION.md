@@ -10,6 +10,8 @@ Ajoutez le recto et le verso dans les deux emplacements illustrés. Le compteur 
 
 Cliquez sur **Préparer ma carte**. Le nom et le numéro sont lus et rapprochés du catalogue. La langue et l’analyse IA optionnelle se trouvent dans **Langue et options d’analyse**. Sans service IA configuré, utilisez la reconnaissance locale.
 
+**Formats acceptés : HEIC / HEIF, JPEG, PNG et WebP**, jusqu’à 10 Mo par fichier et six photos par carte. Vous pouvez sélectionner directement les fichiers `.HEIC` de votre iPhone pour le recto, le verso et les détails. L’application les convertit automatiquement en JPEG sur cet appareil, en gardant la résolution. Ces JPEG servent ensuite à l’OCR, aux sauvegardes et à Vinted. Aucun outil de conversion externe n’est nécessaire. Si le fichier est illisible, une erreur apparaît et la photo précédente est conservée.
+
 ### 2. Vérification
 
 Consultez la fiche de la carte à droite sur ordinateur, ou au-dessus du formulaire sur téléphone. Les boutons **Recto** et **Verso** changent la face affichée. Touchez la photo pour l’agrandir ; utilisez la croix ou la touche Échap pour fermer l’aperçu.

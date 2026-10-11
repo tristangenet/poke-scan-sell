@@ -1,4 +1,18 @@
-# Validation — version 0.4.0
+# Validation — version 0.4.1
+
+## Import HEIC / HEIF — 0.4.1
+
+Vérifications du 11 octobre 2026 : construction de production Vite réussie, **37 tests Node** et **60 parcours navigateur Chromium 153** réussis. Les quatre parcours d’import photo passent aussi contre le serveur Node servant la version construite, avec les mêmes fichiers HEIC et sans serveur Vite.
+
+Les deux fichiers inclus dans `tests/fixtures/photos` sont des images HEIC/HEIF réelles encodées en HEVC, avec des cartes synthétiques de 1000 × 1400 pixels. La conversion et l’OCR sont réellement exécutés, sans mock de décodeur. Les cinq nouveaux parcours couvrent :
+
+- Recto `.HEIC` en majuscules sans MIME, verso identifié par son MIME sans extension ; sortie JPEG avec nom, MIME et signature cohérents, résolution conservée, sauvegarde locale, rechargement et restauration sans changement des octets JPEG.
+- Glisser-déposer HEIF avec MIME générique, photos de détail, variante MIME de séquence, limite de six photos et absence de débordement à 320 pixels.
+- Fichier HEIC corrompu et fichier de plus de 10 Mo : erreur explicite, photo précédente conservée et remplacement ultérieur réussi.
+- JPEG, PNG et WebP : octets d’origine conservés et décodeur HEIC non chargé.
+- Import des deux HEIC, lecture réelle de « Dracaufeu 4/102 », création de l’annonce, ZIP avec les deux JPEG, puis transfert au formulaire Vinted de contrôle avec titre, prix décimal et état. Les JPEG reçus sont identiques octet par octet à ceux enregistrés ; aucun clic Publier.
+
+Le catalogue et les APIs Chrome sont simulés dans le parcours Vinted, avec les scripts réels du compagnon et sa file IndexedDB. Aucun compte Vinted ni annonce réelle n’a été utilisé. La lecture native Safari et les variantes de fichiers provenant directement d’iPhone ne sont pas encore testées sur un appareil Apple. Les photos JPEG de test sont dérivées des fichiers HEIC ; elles ne sont pas présentées comme des originaux HEIC conservés.
 
 ## Refonte Pokémon — 0.4.0
 
