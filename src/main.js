@@ -1,4 +1,5 @@
 import "./style.css";
+import "./studio.css";
 import packageInfo from "../package.json";
 import { analyzePhotos } from "./vision.js";
 import {

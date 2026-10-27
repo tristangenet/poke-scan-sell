@@ -1,0 +1,141 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="400"
+  height="300"
+  viewBox="0 0 400 300"
+  fill="none"
+>
+  <defs>
+    <linearGradient
+      id="holo"
+      x1="113"
+      y1="32"
+      x2="290"
+      y2="273"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#C8F6DE" />
+      <stop offset=".31" stop-color="#A4CBDD" />
+      <stop offset=".56" stop-color="#E5BBD2" />
+      <stop offset=".8" stop-color="#F4DF9E" />
+      <stop offset="1" stop-color="#A1E5D1" />
+    </linearGradient>
+    <linearGradient
+      id="glass"
+      x1="149"
+      y1="58"
+      x2="268"
+      y2="254"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#30545B" />
+      <stop offset="1" stop-color="#142E36" />
+    </linearGradient>
+    <linearGradient
+      id="beam"
+      x1="118"
+      y1="97"
+      x2="301"
+      y2="253"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#FFF" stop-opacity=".24" />
+      <stop offset=".43" stop-color="#FFF" stop-opacity="0" />
+    </linearGradient>
+    <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M16 0H0v16" stroke="#C6F7DF" stroke-opacity=".07" />
+    </pattern>
+  </defs>
+  <ellipse
+    cx="206"
+    cy="158"
+    rx="172"
+    ry="85"
+    transform="rotate(-20 206 158)"
+    stroke="#9EDDC8"
+    stroke-opacity=".25"
+    stroke-dasharray="3 7"
+  />
+  <ellipse
+    cx="208"
+    cy="160"
+    rx="150"
+    ry="75"
+    transform="rotate(-20 208 160)"
+    stroke="#9EDDC8"
+    stroke-opacity=".1"
+  />
+  <g transform="rotate(-16 190 150)">
+    <rect
+      x="112"
+      y="46"
+      width="145"
+      height="210"
+      rx="15"
+      fill="#23464F"
+      stroke="#4F767A"
+    />
+    <rect
+      x="121"
+      y="55"
+      width="127"
+      height="192"
+      rx="9"
+      stroke="#527B7B"
+      stroke-opacity=".55"
+    />
+  </g>
+  <g transform="rotate(12 220 150)">
+    <rect x="145" y="37" width="151" height="220" rx="16" fill="url(#holo)" />
+    <rect x="149" y="41" width="143" height="212" rx="12" fill="url(#glass)" />
+    <rect
+      x="156"
+      y="48"
+      width="129"
+      height="198"
+      rx="8"
+      stroke="#B9E3D6"
+      stroke-opacity=".4"
+    />
+    <rect x="157" y="49" width="127" height="196" rx="7" fill="url(#grid)" />
+    <rect x="156" y="48" width="129" height="198" rx="8" fill="url(#beam)" />
+    <circle
+      cx="220.5"
+      cy="145"
+      r="37"
+      fill="#18353D"
+      stroke="url(#holo)"
+      stroke-width="1.5"
+    />
+    <circle cx="220.5" cy="145" r="28" fill="#F7F2DF" />
+    <path d="M192.5 145a28 28 0 0 1 56 0h-56Z" fill="#ED4D62" />
+    <path d="M192.5 145h56" stroke="#18353D" stroke-width="5" />
+    <circle
+      cx="220.5"
+      cy="145"
+      r="10"
+      fill="#F7F2DF"
+      stroke="#18353D"
+      stroke-width="5"
+    />
+    <circle cx="220.5" cy="145" r="3" fill="#B6D8CD" />
+    <path
+      d="M173 68h27m-27 6h16M241 227h27m-16-6h16"
+      stroke="#B0E5D1"
+      stroke-opacity=".65"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+    <path
+      d="M167 92V62h30m77 140v30h-30"
+      stroke="#DAEACD"
+      stroke-opacity=".65"
+      stroke-width="1.5"
+    />
+  </g>
+  <path d="m314 44 3 10 10 3-10 3-3 10-3-10-10-3 10-3 3-10Z" fill="#C3F0D7" />
+  <path d="m83 184 2 7 7 2-7 2-2 7-2-7-7-2 7-2 2-7Z" fill="#F1D891" />
+  <circle cx="322" cy="203" r="4" fill="#D9586A" />
+  <circle cx="99" cy="75" r="3" fill="#A5DFD0" />
+  <circle cx="302" cy="251" r="2" fill="#D8D4A7" />
+</svg>

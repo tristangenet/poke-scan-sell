@@ -1,4 +1,4 @@
-# Architecture — version 0.5.1
+# Architecture — version 0.6.0
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -18,6 +18,14 @@ Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 2
 | src/vision.js         | Appel du serveur IA, sans clé fournisseur                                         |
 | server/index.js       | Fichiers construits, contrôle d'accès/origine, limites, API                       |
 | server/vision.js      | Validation photos et appel Responses structuré                                    |
+
+## Thème du studio — 0.6.0
+
+`src/studio.css` est importé après la base CSS pour définir les couleurs, les surfaces, les états et les compositions du studio. `layout` ajoute la classe `studio` au cadre existant et `wizardFrame` place les deux étapes dans un bandeau Pokédex. Le SVG local `public/scan-orbit.svg` est décoratif. La fiche de résumé est rendue uniquement pendant la vérification ; l’écran photo dispose d’un panneau d’action à droite sur ordinateur.
+
+L’identité et l’état sont regroupés dans `review-details`, en colonnes sur grand écran et en pile sur téléphone. Les éléments de formulaire, actions, routes et libellés accessibles restent ceux du parcours rapide. Les photos utilisent toujours un affichage intégral sans filtre visuel sur leur contenu. Le thème inclut les états de focus, les erreurs, le dialogue d’agrandissement et la réduction des mouvements. Les pages historiques héritent des couleurs et contrôles communs.
+
+Aucun changement du modèle, d’IndexedDB, du serveur ou du protocole Vinted. Le compagnon reste en 0.2.10. Les captures documentaires utilisent les photos HEIC synthétiques du dépôt ; elles ne peuplent pas les navigateurs utilisateurs.
 
 ## Import HEIC / HEIF
 
@@ -39,7 +47,7 @@ La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistr
 
 La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
 
-Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.5.1 ne change pas le protocole ni l’origine autorisée.
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.6.0 ne change pas le protocole ni l’origine autorisée.
 
 ## Liens de comparaison — 0.5.1
 

@@ -30,6 +30,8 @@ const icons = {
   ball: '<circle cx="12" cy="12" r="9"/><path d="M3 12h6m6 0h6"/><circle cx="12" cy="12" r="3"/>',
   bolt: '<path d="m13 2-9 12h7l-1 8 10-13h-7z"/>',
   flip: '<path d="M4 7h15l-4-4M20 17H5l4 4M4 7v5m16 5v-5"/>',
+  sparkle:
+    '<path d="m12 2 2.6 7.4L22 12l-7.4 2.6L12 22l-2.6-7.4L2 12l7.4-2.6L12 2Z"/>',
   expand: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5"/>',
 };
 export const icon = (n) =>
@@ -63,8 +65,8 @@ export function scanGuide(side) {
 }
 
 export function layout(content, { view, version }) {
-  const brand = `<a class="brand" href="#/" data-action="new" aria-label="${PRODUCT.name} — Scanner une carte"><img src="/icon.svg" alt=""><span>Poké<span class="brand-light">Scan Sell</span></span></a>`;
-  return `<a class="skip-link" href="#main-content">Aller au contenu</a><div class="workspace streamlined" data-view="${view}"><header class="topbar">${brand}${btn(icon("scan") + " Scanner", "new", "secondary")}</header><div id="save-status" class="save-status save-error" role="alert" hidden></div><main id="main-content" tabindex="-1">${content}</main><footer><span>${PRODUCT.name} <b>v${esc(version)}</b></span></footer></div>`;
+  const brand = `<a class="brand" href="#/" data-action="new" aria-label="${PRODUCT.name} — Scanner une carte"><img src="/icon.svg" alt=""><span class="brand-copy"><span class="brand-name">Poké<span class="brand-light">Scan Sell</span></span><small>LE COMPAGNON DE VOS CARTES</small></span></a>`;
+  return `<a class="skip-link" href="#main-content">Aller au contenu</a><div class="workspace streamlined studio" data-view="${view}"><header class="topbar">${brand}${btn(icon("scan") + " Scanner", "new", "secondary")}</header><div id="save-status" class="save-status save-error" role="alert" hidden></div><main id="main-content" tabindex="-1">${content}</main><footer><span>${PRODUCT.name} <b>v${esc(version)}</b></span></footer></div>`;
 }
 
 export function collectionGrid(list, { filtered = false } = {}) {
@@ -207,9 +209,8 @@ export function wizardFrame(content, { card, stage, previewSide = "front" }) {
       card.conditionConfirmed &&
       !Object.keys(reviewIssues(card)).length,
   };
-  return `<div class="editor-heading"><div><div class="eyebrow">DU SCAN À L’ANNONCE · ÉTAPE ${index + 1} SUR 2</div><h1>Vendre une carte</h1><p>${stage === "photos" ? "Un recto, un verso. L’aventure commence ici." : stage === "review" ? "Votre carte sous les yeux, le bon prix en tête." : "La dernière vérification avant de rejoindre Vinted."}</p></div><div class="saved">${badge(card.status)}</div></div>
-    <nav class="wizard-steps" aria-label="Étapes de votre annonce">${labels.map(([s, label, i, hint], n) => btn(`<span class="step-number">${n < index && completed[s] ? icon("check") : icon(i)}</span><span class="step-copy"><strong>${label}</strong><small>${hint}</small></span><span class="step-index" aria-hidden="true">0${n + 1}</span>`, "quick-stage", `${n === index ? "current" : n < index && completed[s] ? "done" : ""}`, `aria-label="${n + 1} ${label}" data-stage="${s}" ${s === stage ? 'aria-current="step"' : ""} ${s === "listing" && cardStage(card) !== "listing" ? "disabled" : ""} ${s === "review" && !card.name && !card.number && !card.photos.length ? "disabled" : ""}`)).join("")}</nav>
-    <div class="quick-layout" data-stage="${stage}"><section class="wizard-main">${content}</section><aside class="summary panel" id="wizard-summary" aria-label="Résumé de la carte">${summaryView(card, previewSide)}</aside></div>`;
+  return `<section class="studio-intro" data-stage="${stage}"><div class="studio-intro-copy"><div class="studio-kicker"><span aria-hidden="true"></span> POKÉMON · DU SCAN À LA VENTE</div><h1>Vendre une carte${icon("sparkle")}</h1><p>${stage === "photos" ? "Deux photos. Votre prochaine annonce commence ici." : "Votre carte sous les yeux. Vinted à un clic."}</p><nav class="wizard-steps" aria-label="Étapes de votre annonce">${labels.map(([s, label, i, hint], n) => btn(`<span class="step-number">${n < index && completed[s] ? icon("check") : icon(i)}</span><span class="step-copy"><strong>${label}</strong><small>${hint}</small></span><span class="step-index" aria-hidden="true">0${n + 1}</span>`, "quick-stage", `${n === index ? "current" : n < index && completed[s] ? "done" : ""}`, `aria-label="${n + 1} ${label}" data-stage="${s}" ${s === stage ? 'aria-current="step"' : ""} ${s === "listing" && cardStage(card) !== "listing" ? "disabled" : ""} ${s === "review" && !card.name && !card.number && !card.photos.length ? "disabled" : ""}`)).join("")}</nav></div><div class="studio-intro-art" aria-hidden="true"><img src="/scan-orbit.svg" alt=""></div><div class="studio-intro-status">${badge(card.status)}</div></section>
+    <div class="quick-layout" data-stage="${stage}"><section class="wizard-main">${content}</section>${stage === "review" ? `<aside class="summary panel" id="wizard-summary" aria-label="Résumé de la carte">${summaryView(card, previewSide)}</aside>` : ""}</div>`;
 }
 
 export function settingsView({ cards, connection, installation, backupDate }) {

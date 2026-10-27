@@ -1,10 +1,10 @@
-# Utiliser Poke Scan Sell — 0.5.1
+# Utiliser Poke Scan Sell — 0.6.0
 
 ## 1. Photos
 
 L’application ouvre directement votre carte en cours, ou un nouveau scan s’il n’y a pas de brouillon. Cliquez sur **Scanner** pour commencer une autre carte.
 
-Ajoutez le recto et le verso dans les deux emplacements, par sélection de fichier ou glisser-déposer. Seul le recto sert à lire le nom et le numéro. Le verso est une photo de l’annonce : il n’est soumis ni à l’OCR, ni à une analyse IA, ni au contrôle des pixels. Les deux faces restent consultables pour choisir vous-même l’état de la carte.
+Ajoutez le recto et le verso dans les deux emplacements, par sélection de fichier ou glisser-déposer. Les deux faces sont côte à côte, aussi sur téléphone. Sur ordinateur, le panneau Préparer la carte regroupe la langue et le lancement du scan à droite. Seul le recto sert à lire le nom et le numéro. Le verso est une photo de l’annonce : il n’est soumis ni à l’OCR, ni à une analyse IA, ni au contrôle des pixels. Les deux faces restent consultables pour choisir vous-même l’état de la carte.
 
 Le français est sélectionné par défaut. Ouvrez **Changer la langue (français par défaut)** pour choisir l’anglais si nécessaire. Cliquez sur **Préparer ma carte** pour lire le recto et accéder à la vérification. Vous pouvez aussi choisir la saisie manuelle.
 

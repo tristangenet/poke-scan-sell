@@ -340,7 +340,7 @@ test("transfert complet : application → file IndexedDB → onglet Vinted → r
   });
   expect(pending).toEqual([{ status: "filled", draft: null, fileCount: 0 }]);
   expect(await tab.evaluate(() => window.published)).toBe(0);
-  await expect(page.locator(".saved")).toContainText("Prête");
+  await expect(page.getByText("Prête", { exact: true })).toBeVisible();
 });
 
 test("transfert : garde le brouillon si l’état échoue puis termine la reprise sans doublon", async ({

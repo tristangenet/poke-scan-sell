@@ -1,4 +1,16 @@
-# Validation — version 0.5.1
+# Validation — version 0.6.0
+
+## Studio du collectionneur — 0.6.0
+
+Vérifications du 27 octobre 2026 : construction de production Vite réussie, **40 tests Node** et **68 parcours navigateur Chromium 153** réussis. Le compagnon reste en 0.2.10. La suite couvre les imports HEIC réels, l’OCR du recto, les textes, la langue, les filtres des deux marchés, les sauvegardes et le transfert Vinted dans le nouveau cadre.
+
+Le thème a été inspecté à **320, 390, 640, 768, 960, 1024 et 1440 pixels**, sur les écrans Photos et Vérification. Un parcours de contrôle supplémentaire passe sans erreur JavaScript : chargement du SVG, import de deux HEIC réels, affichage des JPEG, champs de vérification, absence de débordement horizontal et bouton de validation visible et atteignable à 1440 × 600. La préférence de réduction des mouvements ramène la transition du bouton à `0s`.
+
+Contrastes calculés : **4,91** pour le texte blanc du bouton rouge, **4,97** pour le texte secondaire de référence sur papier et **3,27** pour la bordure des champs sur papier. Le navigateur confirme la couleur du bouton `rgb(215, 40, 67)` avec un texte blanc. Les contrôles de focus, d’agrandissement, de retour du focus et de conservation des photos passent.
+
+Les captures [ordinateur](screenshots/studio-desktop.jpg) et [mobile](screenshots/studio-mobile.jpg) sont réalisées après disparition des notifications transitoires. Elles utilisent les fichiers HEIC synthétiques du dépôt et un prix de saisie de test, sans collection utilisateur ni prix de marché réel. Le dessin holographique de l’en-tête est un SVG local décoratif ; aucun effet ne retouche les photos des cartes.
+
+Le contrôle du statut après transfert utilise désormais le texte visible « Prête », puisque le cadre visuel du statut a changé. Il confirme toujours qu’un remplissage Vinted ne déclare pas automatiquement une publication. Après cet ajustement du sélecteur de test, la suite complète de 68 parcours passe. Les APIs Chrome et les formulaires Vinted restent simulés avec les scripts réels du compagnon et sa file IndexedDB ; aucun compte Vinted ni annonce réelle n’est utilisé.
 
 ## Liens de comparaison — 0.5.1
 

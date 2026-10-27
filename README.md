@@ -2,7 +2,17 @@
 
 Photographiez une carte Pokémon, vérifiez ses informations et remplissez directement son annonce Vinted.
 
-## Version 0.5.1 — liens de comparaison
+## Version 0.6.0 — le studio du collectionneur
+
+Nouvelle identité inspirée du Pokédex et des cartes holographiques : bureau ivoire, bleu nuit, rouge Poké Ball et reflets menthe, rose et dorés. L’illustration du scan est un SVG local créé pour l’application. Les zones photo prennent la forme de cartes, la préparation est regroupée à droite sur ordinateur et les deux photos restent côte à côte sur téléphone.
+
+La vérification rassemble identité et état en colonnes, avec une fiche de carte sombre et un panneau de prix dédié. Le parcours reste **Photos → Vérification → Vinted** ; les menus supprimés, le français par défaut et les filtres de comparaison sont conservés. Le compagnon Vinted reste en 0.2.10.
+
+![Écran Photos du studio](docs/screenshots/studio-desktop.jpg)
+
+[Voir la vérification sur mobile](docs/screenshots/studio-mobile.jpg). Ces captures utilisent des photos synthétiques de test, sans collection utilisateur.
+
+## Liens de comparaison — depuis 0.5.1
 
 La recherche Vinted contient uniquement le nom et le numéro complet, par exemple **Magirêve 212/193**, sans extension ni variante. Les liens Cardmarket ajoutent **France** comme pays du vendeur et la langue de la carte choisie à l’étape Photos : français par défaut, anglais si sélectionné. Les deux vues utilisent les mêmes règles, y compris après modification ou rechargement de la carte.
 
@@ -63,7 +73,7 @@ npm ci
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.5.1**.
+Actualiser l’onglet : le pied de page doit afficher **v0.6.0**.
 
 ## Remplir Vinted
 
