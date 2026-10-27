@@ -2,7 +2,11 @@
 
 Photographiez une carte Pokémon, vérifiez ses informations et remplissez directement son annonce Vinted.
 
-## Version 0.5.0 — deux écrans, puis Vinted
+## Version 0.5.1 — liens de comparaison
+
+La recherche Vinted contient uniquement le nom et le numéro complet, par exemple **Magirêve 212/193**, sans extension ni variante. Les liens Cardmarket ajoutent **France** comme pays du vendeur et la langue de la carte choisie à l’étape Photos : français par défaut, anglais si sélectionné. Les deux vues utilisent les mêmes règles, y compris après modification ou rechargement de la carte.
+
+## Deux écrans, puis Vinted
 
 L’application s’ouvre directement sur le scan, sans menu Accueil, Mes cartes, Aide ou Paramètres. Le bouton **Scanner** permet de commencer une autre carte. Les mentions d’enregistrement restent silencieuses ; une erreur de sauvegarde est toujours signalée.
 
@@ -59,7 +63,7 @@ npm ci
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.5.0**.
+Actualiser l’onglet : le pied de page doit afficher **v0.5.1**.
 
 ## Remplir Vinted
 

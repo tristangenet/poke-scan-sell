@@ -1,4 +1,4 @@
-# Architecture — version 0.5.0
+# Architecture — version 0.5.1
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -39,7 +39,13 @@ La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistr
 
 La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
 
-Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.5.0 ne change pas le protocole ni l’origine autorisée.
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.5.1 ne change pas le protocole ni l’origine autorisée.
+
+## Liens de comparaison — 0.5.1
+
+`vintedSearchUrl` construit la recherche avec le nom et le numéro complet uniquement, sans extension ni variante. `cardmarketSearchUrl` conserve la recherche 2.0 par nom et numéro de collection, puis ajoute `sellerCountry=12` et `language=2` pour une carte française ou `language=1` pour une carte anglaise. La langue de l’interface Cardmarket reste française. Les identifiants de pays et de langues sont référencés dans la [documentation officielle Cardmarket](https://apiv2.cardmarket.com/ws/documentation/API_2.0%3AArticles) ; les noms des paramètres web suivent l’URL fournie par l’utilisateur.
+
+Les deux fonctions sont partagées entre la vérification et l’ancien écran d’estimation. Les liens sont reconstruits depuis la carte active à chaque rendu ; le choix de langue est sauvegardé à l’étape Photos. Ces paramètres concernent les liens de comparaison, sans appel à une API Cardmarket ni changement de calcul de la tendance TCGdex.
 
 ## Texte et prix d’annonce — 0.4.3
 

@@ -2,7 +2,7 @@
 
 ## Installer une seule fois
 
-1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.5.0. Le compagnon reste en version 0.2.10 ; si cette version est déjà installée, aucune réinstallation n’est nécessaire pour le nouveau parcours. Pour une version plus ancienne, suivez les étapes ci-dessous.
+1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.5.1. Le compagnon reste en version 0.2.10 ; si cette version est déjà installée, aucune réinstallation n’est nécessaire pour le nouveau parcours. Pour une version plus ancienne, suivez les étapes ci-dessous.
 2. Préparer une carte, puis cliquer sur **Valider et remplir Vinted** dans la vérification. Si le compagnon manque, **Activer le remplissage Vinted** s’ouvre sur place.
 3. Cliquer sur **Télécharger l’extension Chrome / Edge**, puis décompresser le ZIP.
 4. Ouvrir `chrome://extensions` ou `edge://extensions` et activer le **mode développeur**.

@@ -5,6 +5,14 @@ export const PRODUCT = {
   tagline: "De la carte à l’annonce.",
 };
 
+export function vintedSearchUrl(card) {
+  const query = [card.name, card.number]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .join(" ");
+  return `https://www.vinted.fr/catalog?search_text=${encodeURIComponent(query)}`;
+}
+
 export function cardmarketSearchUrl(card) {
   const query = [
     String(card.name || "").trim(),
@@ -14,7 +22,8 @@ export function cardmarketSearchUrl(card) {
   ]
     .filter(Boolean)
     .join(" ");
-  return `https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=${encodeURIComponent(query)}&searchMode=v2`;
+  const language = card.language === "en" ? 1 : 2;
+  return `https://www.cardmarket.com/fr/Pokemon/Products/Search?searchString=${encodeURIComponent(query)}&searchMode=v2&sellerCountry=12&language=${language}`;
 }
 
 export const CONDITION_LABELS = {

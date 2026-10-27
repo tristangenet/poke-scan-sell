@@ -1,4 +1,14 @@
-# Validation — version 0.5.0
+# Validation — version 0.5.1
+
+## Liens de comparaison — 0.5.1
+
+Vérifications du 27 octobre 2026 : construction de production Vite réussie, **40 tests Node** et **deux parcours navigateur ciblés Chromium 153** réussis. La suite complète de la version 0.5.0 n’a pas été relancée pour cette correction de liens.
+
+Les deux cas partent d’une carte Magirêve 212/193 avec extension Évolutions à Paldea et variante Holo, puis sélectionnent réellement le français ou l’anglais à l’étape Photos. La vérification génère une recherche Vinted exactement égale à `Magirêve 212/193`, sans extension ni variante, et une recherche Cardmarket `Magirêve 212`, avec `sellerCountry=12` et `language=2` ou `language=1`. Chaque lien est cliqué ; l’onglet ouvert conserve son URL et les liens utilisent `noopener noreferrer`.
+
+Les mêmes assertions passent après modification du nom en Évoli et du numéro en TG01/TG30, après rechargement, puis dans l’ancien écran d’estimation. Le choix de langue est conservé depuis la première étape. Les navigations externes des tests sont interceptées par des pages de contrôle ; ces tests vérifient les liens transmis, sans consulter de prix réels.
+
+La documentation officielle Cardmarket confirme les identifiants 12 pour la France, 1 pour l’anglais et 2 pour le français. La page produit de l’exemple utilisateur n’est pas accessible par l’outil de recherche : l’application des filtres dans l’interface réelle de Cardmarket n’a donc pas été observée. Les paramètres web reprennent l’exemple fourni. Le compagnon Vinted reste en 0.2.10.
 
 ## Photos → Vérification → Vinted — 0.5.0
 

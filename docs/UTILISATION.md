@@ -1,4 +1,4 @@
-# Utiliser Poke Scan Sell — 0.5.0
+# Utiliser Poke Scan Sell — 0.5.1
 
 ## 1. Photos
 
@@ -14,7 +14,7 @@ Formats : **HEIC / HEIF, JPEG, PNG et WebP**, six photos maximum et 10 Mo par fi
 
 Contrôlez le nom et le numéro lus, choisissez l’état et votre prix. En cas de lecture partielle, complétez uniquement ce qui manque. Aucun champ d’extension, de variante ni texte brut de l’OCR n’est affiché.
 
-Utilisez **Recto** et **Verso** dans la fiche pour consulter les deux faces ; touchez la photo pour l’agrandir. Échap ou la croix ferme l’aperçu. Les liens **Comparer les annonces Vinted** et **Comparer les annonces Cardmarket** ouvrent les recherches dans un autre onglet. Une tendance Cardmarket disponible peut être choisie comme point de départ ; elle ne garantit pas le prix selon l’état.
+Utilisez **Recto** et **Verso** dans la fiche pour consulter les deux faces ; touchez la photo pour l’agrandir. Échap ou la croix ferme l’aperçu. Les liens **Comparer les annonces Vinted** et **Comparer les annonces Cardmarket** ouvrent les recherches dans un autre onglet. Vinted recherche uniquement le nom et le numéro complet, sans extension ni variante. Cardmarket recherche le nom et le numéro de collection, avec les paramètres de pays du vendeur France et de langue de carte française ou anglaise selon votre choix à l’étape Photos. Une tendance Cardmarket disponible peut être choisie comme point de départ ; elle ne garantit pas le prix selon l’état.
 
 Cliquez sur **Valider et remplir Vinted**. Ce bouton confirme vos informations, prépare le texte et ouvre directement le formulaire Vinted par le compagnon. L’application reste sur la vérification, sans écran Annonce intermédiaire.
 
