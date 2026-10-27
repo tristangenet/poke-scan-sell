@@ -157,5 +157,6 @@ export async function readyCard(page) {
     await saveCard(card);
   }, data);
   await page.reload();
+  await page.goto("/#/cards");
   await page.locator(".collection-card").first().click();
 }

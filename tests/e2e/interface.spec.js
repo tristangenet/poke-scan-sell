@@ -1,3 +1,4 @@
+import { currentCard, expectSaved } from "./support/app.js";
 import { test, expect } from "@playwright/test";
 import { data, readyCard } from "./support/vinted-fixture.js";
 
@@ -40,101 +41,91 @@ async function seedCollection(page) {
   return ids;
 }
 
-test("première utilisation : navigation explicite, aide au clavier et reprise d’un seul brouillon vide", async ({
+test("première utilisation : accès direct aux photos, menu retiré et un seul brouillon vide", async ({
   page,
 }) => {
   await page.goto("/");
+  await expect(page.locator("#stage-title")).toHaveText(
+    "Deux photos. Une annonce.",
+  );
+  await expect(page.locator(".sidebar")).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "Vendez vos cartes, simplement." }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Préparer ma première annonce" })
-    .click();
+    page.getByRole("navigation", { name: "Navigation principale" }),
+  ).toHaveCount(0);
+  for (const name of [
+    "Accueil",
+    "Mes cartes",
+    "Aide",
+    "Paramètres",
+    "Besoin d’aide ?",
+  ])
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(
+      0,
+    );
+  await expect(
+    page.getByText("Enregistré sur cet appareil", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator(".wizard-steps button")).toHaveCount(2);
+  await page.getByRole("button", { name: "Scanner", exact: true }).click();
   const route = new URL(page.url()).hash;
-  await expect(
-    page.getByRole("button", { name: "Préparer ma carte", exact: true }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Accueil", exact: true }).click();
   await expect(page.locator("#app")).not.toHaveAttribute("aria-busy", "true");
   await page.getByRole("button", { name: "Scanner", exact: true }).click();
   await expect.poll(() => new URL(page.url()).hash).toBe(route);
-  await page.getByRole("button", { name: "Aide", exact: true }).click();
-  await expect(page.locator("main h1")).toBeFocused();
+  expect(
+    await page.evaluate(
+      async () => (await (await import("/src/storage.js")).listCards()).length,
+    ),
+  ).toBe(1);
   const skip = page.getByRole("link", { name: "Aller au contenu" });
   await skip.focus();
   await skip.press("Enter");
   await expect(page.locator("#main-content")).toBeFocused();
-  await expect(page).toHaveURL(/#\/help$/);
-  await page
-    .getByRole("button", { name: "Mes cartes", exact: true })
-    .first()
-    .click();
-  await expect(page.locator(".collection-card")).toHaveCount(1);
-  await page.locator(".collection-card").click();
-  await page.getByRole("button", { name: "Options avancées" }).click();
-  await page.getByRole("button", { name: "5 Annonce" }).click();
-  await page.locator(".card-admin > summary").click();
-  await page.getByRole("button", { name: "Archiver la carte" }).click();
-  await page.getByRole("button", { name: "Scanner", exact: true }).click();
-  expect(new URL(page.url()).hash).not.toBe(route);
-  await page
-    .getByRole("button", { name: "Mes cartes", exact: true })
-    .first()
-    .click();
-  await expect(page.locator(".collection-card")).toHaveCount(2);
+  await page.reload();
+  expect(new URL(page.url()).hash).toBe(route);
 });
 
-test("saisie : erreurs ciblées, enregistrement sans quitter le champ et options maintenues ouvertes", async ({
+test("vérification : erreurs ciblées, sauvegarde silencieuse et défauts conservés sans champs d’édition", async ({
   page,
 }) => {
   const [id] = await seedCollection(page);
   await page.goto(`/#/cards/${id}/review`);
-  await page.locator('[data-field="name"]').fill("");
-  await page.locator('[data-field="number"]').fill("");
+  for (const field of ["name", "number", "price"])
+    await page.locator(`[data-field="${field}"]`).fill("");
   await page.locator('[data-field="condition"]').selectOption("");
-  await page.locator('[data-field="price"]').fill("");
-  await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator('[aria-invalid="true"]')).toHaveCount(4);
   await expect(page.locator('[data-field="name"]')).toBeFocused();
   await page.locator('[data-field="name"]').fill("Évoli");
-  await expect(page.locator("#save-status")).toHaveText(
-    "Enregistré sur cet appareil",
-  );
+  await expectSaved(page, "name", "Évoli");
   await expect(page.locator('[data-field="name"]')).toBeFocused();
+  await expect(page.locator("#save-status")).toBeHidden();
   await page.reload();
   await expect(page.locator('[data-field="name"]')).toHaveValue("Évoli");
-  await expect(page).toHaveURL(new RegExp(`${id}/review$`));
-  await page.locator(".optional-details > summary").click();
-  await page.locator('[data-field="set"]').fill("Écarlate et Violet");
-  await expect(page.locator("#save-status")).toHaveText(
-    "Enregistré sur cet appareil",
-  );
-  await expect(page.locator(".optional-details")).toHaveAttribute("open", "");
-  await expect(page.locator('[data-field="set"]')).toBeFocused();
-  await page.locator('[data-field="variant"]').fill("Holographique");
-  await expect(page.locator("#save-status")).toHaveText(
-    "Enregistré sur cet appareil",
-  );
+  await page
+    .getByText("Préciser les défauts de la carte", { exact: true })
+    .click();
+  await page.locator('[data-field="defectNotes"]').fill("Petit point blanc");
+  await expectSaved(page, "defectNotes", "Petit point blanc");
+  await expect(page.locator('[data-field="defectNotes"]')).toBeFocused();
+  await expect(
+    page.locator('[data-field="set"], [data-field="variant"]'),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("Voir le texte lu sur la photo", { exact: true }),
+  ).toHaveCount(0);
   await page.locator('[data-field="number"]').fill("1/102");
   await page.locator('[data-field="condition"]').selectOption("EX");
   await page.locator('[data-field="price"]').fill("100001");
-  await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#error-price")).toContainText("100 000");
   await page.locator('[data-field="price"]').fill("12.25");
-  await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
-  ).toBeEnabled();
-  await expect(page).toHaveURL(new RegExp(`${id}/listing$`));
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
+  await expect(page).toHaveURL(new RegExp(`${id}/review$`));
+  await expect(page.locator("#vinted-install")).toHaveAttribute("open", "");
+  expect((await currentCard(page)).title).toBe("Pokémon Évoli 1/102");
 });
 
-test("annonce : corrections conservées lors d’une vérification inchangée et navigation précédent/suivant", async ({
+test("texte personnalisé conservé et navigation photos/vérification sans étape Annonce", async ({
   page,
 }) => {
   let dialogs = 0;
@@ -143,48 +134,49 @@ test("annonce : corrections conservées lors d’une vérification inchangée et
     await dialog.dismiss();
   });
   await readyCard(page);
-  const listingRoute = page.url();
+  const route = page.url();
   await page.locator(".edit-listing > summary").click();
   await page
     .locator('[data-field="description"]')
     .fill("Texte personnalisé, prêt à vendre.");
-  await expect(page.locator("#save-status")).toHaveText(
-    "Enregistré sur cet appareil",
-  );
-  await expect(page.locator("#listing-preview-description")).toHaveText(
-    "Texte personnalisé, prêt à vendre.",
-  );
-  await page.getByRole("button", { name: "Modifier les informations" }).click();
-  await expect(page.locator('[data-field="price"]')).toHaveValue("12.25");
+  await expectSaved(page, "description", "Texte personnalisé, prêt à vendre.");
+  await page.getByRole("button", { name: "1 Photos", exact: true }).click();
   await page
-    .getByRole("button", { name: "Valider et actualiser mon annonce" })
+    .getByRole("button", { name: "2 Vérification", exact: true })
     .click();
-  await expect(page.locator('[data-field="description"]')).toHaveValue(
-    "Texte personnalisé, prêt à vendre.",
-  );
+  await expect(page).toHaveURL(route);
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   expect(dialogs).toBe(0);
+  await expectSaved(page, "description", "Texte personnalisé, prêt à vendre.");
+  await expect(page).toHaveURL(route);
   await page.goBack();
-  await expect(page.locator("#stage-title")).toHaveText("Vérifiez votre carte");
-  await page.goForward();
-  await expect(page).toHaveURL(listingRoute);
-  await expect(page.locator("#listing-preview-description")).toHaveText(
-    "Texte personnalisé, prêt à vendre.",
+  await expect(page.locator("#stage-title")).toHaveText(
+    "Deux photos. Une annonce.",
   );
+  await page.goForward();
+  await expect(page.locator("#stage-title")).toHaveText("Vérifiez votre carte");
   await page.locator(".edit-listing > summary").click();
   await page.locator('[data-field="title"]').fill("");
+  await page.locator('[data-field="title"]').blur();
   await expect(
-    page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
+    page.getByRole("button", { name: "Valider et remplir Vinted" }),
   ).toBeDisabled();
+  await expectSaved(page, "title", "");
+  await page.reload();
+  await page.locator(".edit-listing > summary").click();
+  await expect(page.locator('[data-field="title"]')).toHaveValue("");
+  await page.locator('[data-field="title"]').fill("Mon titre personnalisé");
+  await page.locator('[data-field="title"]').blur();
+  await expect(
+    page.getByRole("button", { name: "Valider et remplir Vinted" }),
+  ).toBeEnabled();
 });
 
 test("collection : recherche sans accent, statuts réels, tri et filtres effaçables sans perdre de carte", async ({
   page,
 }) => {
   await seedCollection(page);
-  await page
-    .getByRole("button", { name: "Mes cartes", exact: true })
-    .first()
-    .click();
+  await page.goto("/#/cards");
   await expect(page.locator(".collection-card")).toHaveCount(5);
   await page
     .getByRole("searchbox", { name: "Rechercher dans la collection" })
@@ -215,10 +207,11 @@ test("collection : recherche sans accent, statuts réels, tri et filtres effaça
   await expect(page.locator(".collection-card")).toHaveCount(5);
 });
 
-test("accueil : les compteurs ouvrent la collection filtrée sans perdre les archives", async ({
+test("ancien accueil accessible par lien direct : les compteurs ouvrent la collection filtrée sans perdre les archives", async ({
   page,
 }) => {
   await seedCollection(page);
+  await page.goto("/#/dashboard");
   await page.locator('.stat-card[data-group="ready"]').click();
   await expect(page).toHaveURL(/#\/cards$/);
   await expect(
@@ -227,10 +220,10 @@ test("accueil : les compteurs ouvrent la collection filtrée sans perdre les arc
   await expect(page.locator(".collection-card")).toHaveCount(1);
   await expect(page.locator(".collection-card h3")).toHaveText("Pikachu");
   await expect(page.locator("main h1")).toBeFocused();
-  await page.getByRole("button", { name: "Accueil", exact: true }).click();
+  await page.goto("/#/dashboard");
   await page.locator('.stat-card[data-group="sold"]').click();
   await expect(page.locator(".collection-card h3")).toHaveText("Mew");
-  await page.getByRole("button", { name: "Accueil", exact: true }).click();
+  await page.goto("/#/dashboard");
   await page.locator('.stat-card[data-group="all"]').click();
   await expect(page.locator(".collection-card")).toHaveCount(5);
 });
@@ -268,9 +261,7 @@ for (const width of [1440, 390, 320]) {
     await expect(verso).toHaveAttribute("aria-pressed", "true");
     await expect(summary.locator(".card-photo")).toHaveAttribute("src", back);
     await page.locator('[data-field="price"]').fill("12.99");
-    await expect(page.locator("#save-status")).toHaveText(
-      "Enregistré sur cet appareil",
-    );
+    await expectSaved(page, "price", "12.99");
     await expect(summary.locator(".card-photo")).toHaveAttribute("src", back);
     await page.getByRole("button", { name: "Agrandir le verso" }).click();
     const dialog = page.getByRole("dialog", { name: "Verso · Évoli" });
@@ -293,6 +284,11 @@ for (const width of [1440, 390, 320]) {
     }, id);
     expect(Number(persisted.price)).toBe(12.99);
     expect(persisted.photos).toEqual([data, back]);
+    if (width === 1440)
+      await page.screenshot({
+        path: ".local/simplify-1440-review.png",
+        fullPage: true,
+      });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -325,31 +321,32 @@ for (const width of [320, 390, 768]) {
         await expect(
           page.getByRole("heading", { name: "Deux photos. Une annonce." }),
         ).toBeVisible();
+      if (hash.endsWith("/photos") || hash.endsWith("/review"))
+        await page.screenshot({
+          path: `.local/simplify-${width}-${hash.endsWith("/photos") ? "photos" : "review"}.png`,
+          fullPage: true,
+        });
       if (hash.endsWith("/review"))
         await expect(
           page.getByRole("heading", { name: "Vérifiez votre carte" }),
         ).toBeVisible();
       if (hash.endsWith("/listing"))
         await expect(
-          page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
+          page.getByRole("button", { name: "Valider et remplir Vinted" }),
         ).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
         ),
       ).toBe(true);
-      for (const label of [
-        "Accueil",
-        "Scanner",
-        "Mes cartes",
-        "Aide",
-        "Paramètres",
-      ])
-        await expect(
-          page
-            .getByRole("navigation", { name: "Navigation principale" })
-            .getByRole("button", { name: label, exact: true }),
-        ).toBeVisible();
+      await expect(
+        page
+          .locator(".topbar")
+          .getByRole("button", { name: "Scanner", exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("navigation", { name: "Navigation principale" }),
+      ).toHaveCount(0);
     }
     await page.getByRole("button", { name: "Scanner", exact: true }).click();
     await page.locator('input[data-side="front"]').focus();

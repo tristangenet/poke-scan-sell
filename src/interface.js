@@ -62,45 +62,9 @@ export function scanGuide(side) {
   return `<svg class="scan-guide" viewBox="0 0 116 156" fill="none" aria-hidden="true"><rect x="15" y="5" width="86" height="142" rx="8" fill="${side === "front" ? "#fff" : "#253d75"}" stroke="${side === "front" ? "#ffce58" : "#94addc"}" stroke-width="4"/>${side === "front" ? '<rect x="25" y="18" width="56" height="6" rx="3" fill="#ed3949"/><rect x="25" y="34" width="66" height="59" rx="4" fill="#e9eefb"/><circle cx="58" cy="62" r="15" stroke="#8295be" stroke-width="2"/><path d="M43 62h30" stroke="#8295be" stroke-width="2"/><circle cx="58" cy="62" r="5" fill="#e9eefb" stroke="#8295be" stroke-width="2"/><path d="M25 105h57m-57 10h43" stroke="#c4cedf" stroke-width="3" stroke-linecap="round"/><rect x="25" y="129" width="29" height="5" rx="2.5" fill="#ed3949"/>' : '<circle cx="58" cy="76" r="27" stroke="#b3c8f0" stroke-width="3"/><path d="M31 76h54" stroke="#b3c8f0" stroke-width="4"/><circle cx="58" cy="76" r="10" fill="#253d75" stroke="#b3c8f0" stroke-width="4"/>'}<path d="M5 22V3h17M94 3h17v19M5 132v19h17m89-19v19H94" stroke="#ed3949" stroke-width="2" stroke-linecap="round"/></svg>`;
 }
 
-export function layout(
-  content,
-  { view, version, stage = "photos", collectionCount = 0 },
-) {
-  const page = {
-    dashboard: "Accueil",
-    inventory: "Mes cartes",
-    settings: "Paramètres",
-    help: "Aide",
-    editor: "Vendre une carte",
-  }[view];
-  const nav = [
-    ["dashboard", "grid", "Accueil"],
-    ["inventory", "stack", "Mes cartes"],
-    ["new", "scan", "Scanner"],
-    ["help", "help", "Aide"],
-    ["settings", "settings", "Paramètres"],
-  ];
-  const brand = `<a class="brand" href="#/" data-action="dashboard" aria-label="${PRODUCT.name} — Accueil"><img src="/icon.svg" alt=""><span>Poké<span class="brand-light">Scan Sell</span><small>LE COMPAGNON DE VOS CARTES</small></span></a>`;
-  return `<a class="skip-link" href="#main-content">Aller au contenu</a>
-    <aside class="sidebar">${brand}<div class="nav-label">ESPACE COLLECTIONNEUR</div>
-      <nav aria-label="Navigation principale">${nav
-        .map(([action, i, label]) => {
-          const current =
-            view === action || (action === "new" && view === "editor");
-          return btn(
-            icon(i) +
-              `<span>${label}</span>${action === "inventory" ? `<b class="nav-count" aria-hidden="true">${collectionCount}</b>` : ""}`,
-            action,
-            `nav-item ${action === "new" ? "nav-scan" : ""} ${current ? "selected" : ""}`,
-            current ? 'aria-current="page"' : "",
-          );
-        })
-        .join("")}</nav>
-      <div class="sidebar-bottom"><div class="backup-card">${icon("shield")}<strong>Gardez vos cartes en lieu sûr.</strong><p>Votre collection est sur cet appareil. Exportez-la pour la conserver.</p>${btn(icon("download") + " Sauvegarder", "export", "sidebar-export")}</div><span class="sidebar-caption">PHOTOGRAPHIEZ. VÉRIFIEZ. VENDEZ.</span></div>
-    </aside>
-    <div class="workspace" data-view="${view}"><header class="topbar"><div class="mobile-brand">${brand}</div><div class="breadcrumb"><span class="breadcrumb-mark">${icon("ball")}</span>Collection Pokémon<span class="breadcrumb-divider">/</span><strong>${esc(view === "editor" ? { photos: "Photos", review: "Vérification", listing: "Annonce" }[stage] || page : page)}</strong></div><div class="topbar-actions"><span id="save-status" class="save-status" role="status" aria-live="polite">Sur cet appareil</span>${btn(icon("help") + " Besoin d’aide ?", "help", "text-button")}</div></header>
-      <main id="main-content" tabindex="-1">${content}</main><footer><span>${PRODUCT.name} <b>v${esc(version)}</b></span><span>Votre collection, votre prochaine aventure.</span></footer>
-    </div>`;
+export function layout(content, { view, version }) {
+  const brand = `<a class="brand" href="#/" data-action="new" aria-label="${PRODUCT.name} — Scanner une carte"><img src="/icon.svg" alt=""><span>Poké<span class="brand-light">Scan Sell</span></span></a>`;
+  return `<a class="skip-link" href="#main-content">Aller au contenu</a><div class="workspace streamlined" data-view="${view}"><header class="topbar">${brand}${btn(icon("scan") + " Scanner", "new", "secondary")}</header><div id="save-status" class="save-status save-error" role="alert" hidden></div><main id="main-content" tabindex="-1">${content}</main><footer><span>${PRODUCT.name} <b>v${esc(version)}</b></span></footer></div>`;
 }
 
 export function collectionGrid(list, { filtered = false } = {}) {
@@ -224,7 +188,7 @@ export function summaryView(card, previewSide = "front") {
               )}</div><small class="zoom-hint">${icon("expand")} Touchez la photo pour l’agrandir.</small>`
           : '<p class="summary-hint">Ajoutez les deux faces pour commencer la préparation.</p>'
       }
-      <div class="summary-facts"><div class="summary-line"><span>Photos</span><strong>${card.photos.length} enregistrée${card.photos.length > 1 ? "s" : ""}</strong></div><div class="summary-line"><span>État</span><strong>${esc(CONDITION_LABELS[card.condition]?.split(" — ")[0] || "À vérifier")}</strong></div><div class="summary-line summary-price"><span>Prix de vente</span><strong>${+card.price > 0 ? money(+card.price) : "À choisir"}</strong></div></div><div class="summary-save">${icon("shield")} Enregistré sur cet appareil</div>
+      <div class="summary-facts"><div class="summary-line"><span>Photos</span><strong>${card.photos.length} enregistrée${card.photos.length > 1 ? "s" : ""}</strong></div><div class="summary-line"><span>État</span><strong>${esc(CONDITION_LABELS[card.condition]?.split(" — ")[0] || "À vérifier")}</strong></div><div class="summary-line summary-price"><span>Prix de vente</span><strong>${+card.price > 0 ? money(+card.price) : "À choisir"}</strong></div></div>
     </div>`;
 }
 
@@ -232,7 +196,6 @@ export function wizardFrame(content, { card, stage, previewSide = "front" }) {
   const labels = [
     ["photos", "Photos", "camera", "Ajoutez les deux faces"],
     ["review", "Vérification", "check", "Identité, état et prix"],
-    ["listing", "Annonce", "external", "Prête pour Vinted"],
   ];
   const index = labels.findIndex(([s]) => s === stage);
   const completed = {
@@ -244,9 +207,9 @@ export function wizardFrame(content, { card, stage, previewSide = "front" }) {
       card.conditionConfirmed &&
       !Object.keys(reviewIssues(card)).length,
   };
-  return `<div class="editor-heading"><div><div class="eyebrow">DU SCAN À L’ANNONCE · ÉTAPE ${index + 1} SUR 3</div><h1>Vendre une carte</h1><p>${stage === "photos" ? "Un recto, un verso. L’aventure commence ici." : stage === "review" ? "Votre carte sous les yeux, le bon prix en tête." : "La dernière vérification avant de rejoindre Vinted."}</p></div><div class="saved">${badge(card.status)}</div></div>
+  return `<div class="editor-heading"><div><div class="eyebrow">DU SCAN À L’ANNONCE · ÉTAPE ${index + 1} SUR 2</div><h1>Vendre une carte</h1><p>${stage === "photos" ? "Un recto, un verso. L’aventure commence ici." : stage === "review" ? "Votre carte sous les yeux, le bon prix en tête." : "La dernière vérification avant de rejoindre Vinted."}</p></div><div class="saved">${badge(card.status)}</div></div>
     <nav class="wizard-steps" aria-label="Étapes de votre annonce">${labels.map(([s, label, i, hint], n) => btn(`<span class="step-number">${n < index && completed[s] ? icon("check") : icon(i)}</span><span class="step-copy"><strong>${label}</strong><small>${hint}</small></span><span class="step-index" aria-hidden="true">0${n + 1}</span>`, "quick-stage", `${n === index ? "current" : n < index && completed[s] ? "done" : ""}`, `aria-label="${n + 1} ${label}" data-stage="${s}" ${s === stage ? 'aria-current="step"' : ""} ${s === "listing" && cardStage(card) !== "listing" ? "disabled" : ""} ${s === "review" && !card.name && !card.number && !card.photos.length ? "disabled" : ""}`)).join("")}</nav>
-    <div class="quick-layout" data-stage="${stage}"><section class="wizard-main">${content}<div class="wizard-footnote">${btn(icon("back") + " Mes cartes", "inventory", "text-button")}${btn("Options avancées", "advanced-mode", "text-button")}</div></section><aside class="summary panel" id="wizard-summary" aria-label="Résumé de la carte">${summaryView(card, previewSide)}</aside></div>`;
+    <div class="quick-layout" data-stage="${stage}"><section class="wizard-main">${content}</section><aside class="summary panel" id="wizard-summary" aria-label="Résumé de la carte">${summaryView(card, previewSide)}</aside></div>`;
 }
 
 export function settingsView({ cards, connection, installation, backupDate }) {

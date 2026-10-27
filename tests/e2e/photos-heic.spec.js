@@ -17,10 +17,15 @@ async function scan(page) {
 }
 
 async function backup(page) {
+  const route = page.url();
   const event = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Sauvegarder", exact: true }).click();
+  await page.goto("/#/settings");
+  await page
+    .getByRole("button", { name: "Exporter l’inventaire", exact: true })
+    .click();
   const download = await event;
   const path = await download.path();
+  await page.goto(route);
   return { path, data: JSON.parse(await readFile(path, "utf8")) };
 }
 
@@ -94,10 +99,7 @@ test("HEIC recto/verso : extension majuscule sans MIME, conversion, résolution 
   await expect(
     page.locator('.photo-slot[data-side="back"] img'),
   ).toHaveAttribute("src", photos[1].data);
-  await page
-    .getByRole("button", { name: "Paramètres", exact: true })
-    .first()
-    .click();
+  await page.goto("/#/settings");
   await page.locator("#restore").setInputFiles(saved.path);
   await expect(page.locator("#toast")).toContainText("1 carte(s) restaurée(s)");
   const restored = (await backup(page)).data.cards.find(

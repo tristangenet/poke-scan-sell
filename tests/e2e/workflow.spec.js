@@ -1,3 +1,4 @@
+import { advanced } from "./support/app.js";
 import { test, expect } from "@playwright/test";
 import JSZip from "jszip";
 test("parcours complet : photos, identité, prix, annonce, sauvegarde et restauration", async ({
@@ -7,7 +8,7 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   const image = await page.evaluate(() => {
@@ -33,7 +34,7 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
   ).toBeVisible();
   await page.locator('input[data-side="back"]').setInputFiles(file);
   await expect(page.getByAltText("Verso de la carte")).toBeVisible();
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  await advanced(page);
   await page.getByRole("button", { name: "2 Identification" }).click();
   for (const [field, value] of [
     ["name", "Dracaufeu"],
@@ -107,22 +108,25 @@ test("parcours complet : photos, identité, prix, annonce, sauvegarde et restaur
     .click();
   await expect(page.locator(".saved")).toContainText("Publiée");
   const exportEvent = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Sauvegarder", exact: true }).click();
+  await page.goto("/#/settings");
+  await page
+    .getByRole("button", { name: "Exporter l’inventaire", exact: true })
+    .click();
   const backup = await exportEvent;
   const backupPath = await backup.path();
   await page.reload();
-  await page.getByRole("button", { name: "Mes cartes", exact: true }).click();
+  await page.goto("/#/cards");
   await expect(page.locator(".collection-card")).toHaveCount(1);
   await page.locator(".collection-card").click();
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  await advanced(page);
   await page.getByRole("button", { name: "5 Annonce" }).click();
   await expect(page.locator('[data-field="description"]')).toHaveValue(
     "Description personnalisée conservée.",
   );
-  await page.getByRole("button", { name: "Paramètres", exact: true }).click();
+  await page.goto("/#/settings");
   await page.locator("#restore").setInputFiles(backupPath);
   await expect(page.locator("#toast")).toContainText("1 carte(s) restaurée(s)");
-  await page.getByRole("button", { name: "Mes cartes", exact: true }).click();
+  await page.goto("/#/cards");
   await expect(page.locator(".collection-card")).toHaveCount(2);
   expect(errors).toEqual([]);
 });
@@ -131,9 +135,7 @@ test("mobile, absence de débordement, blocage sans verso et absence de prix fic
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page
-    .getByRole("heading", { name: "Vendez vos cartes, simplement." })
-    .waitFor();
+  await page.getByRole("heading", { name: "Vendre une carte" }).waitFor();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -143,7 +145,7 @@ test("mobile, absence de débordement, blocage sans verso et absence de prix fic
     .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  await advanced(page);
   await page.getByRole("button", { name: "3 État" }).click();
   await expect(
     page.locator('[data-field="conditionConfirmed"]'),
@@ -181,10 +183,10 @@ test("catalogue : sélection explicite et données externes échappées", async 
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  await advanced(page);
   await page.getByRole("button", { name: "2 Identification" }).click();
   await page.locator('[data-field="name"]').fill("Dracaufeu");
   await page.locator('[data-field="name"]').blur();
@@ -220,7 +222,7 @@ test("OCR réel avec moteur local : nom et numéro lus sur une image synthétiqu
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   const image = await page.evaluate(() => {
@@ -243,7 +245,7 @@ test("OCR réel avec moteur local : nom et numéro lus sur une image synthétiqu
     buffer: Buffer.from(image, "base64"),
   });
   await expect(page.locator(".photo-slot img")).toHaveCount(1);
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  await advanced(page);
   await page.getByRole("button", { name: "2 Identification" }).click();
   await page.getByRole("button", { name: "Lire la photo avec l’OCR" }).click();
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102", {

@@ -1,51 +1,33 @@
-# Utiliser Poke Scan Sell
+# Utiliser Poke Scan Sell — 0.5.0
 
-## Préparer une annonce
+## 1. Photos
 
-Depuis **Accueil**, choisissez **Ajouter une carte** ou **Préparer ma première annonce**. Sur téléphone, le bouton rouge **Scanner** reste accessible au centre de la navigation du bas. Les compteurs de l’accueil ouvrent directement les cartes à préparer, prêtes ou vendues.
+L’application ouvre directement votre carte en cours, ou un nouveau scan s’il n’y a pas de brouillon. Cliquez sur **Scanner** pour commencer une autre carte.
 
-### 1. Photos
+Ajoutez le recto et le verso dans les deux emplacements, par sélection de fichier ou glisser-déposer. Seul le recto sert à lire le nom et le numéro. Le verso est une photo de l’annonce : il n’est soumis ni à l’OCR, ni à une analyse IA, ni au contrôle des pixels. Les deux faces restent consultables pour choisir vous-même l’état de la carte.
 
-Ajoutez le recto et le verso dans les deux emplacements illustrés. Le compteur passe de **0 / 2** à **2 / 2 photos** lorsque les deux faces sont présentes. Photographiez une carte à la fois, bien droite, avec le nom et le numéro lisibles. Sur ordinateur, vous pouvez déposer une image sur chaque emplacement. Vous pouvez remplacer une photo ou ajouter des détails dans le volet prévu.
+Le français est sélectionné par défaut. Ouvrez **Changer la langue (français par défaut)** pour choisir l’anglais si nécessaire. Cliquez sur **Préparer ma carte** pour lire le recto et accéder à la vérification. Vous pouvez aussi choisir la saisie manuelle.
 
-Cliquez sur **Préparer ma carte**. Le nom et le numéro sont lus et rapprochés du catalogue. La langue et l’analyse IA optionnelle se trouvent dans **Langue et options d’analyse**. Sans service IA configuré, utilisez la reconnaissance locale.
+Formats : **HEIC / HEIF, JPEG, PNG et WebP**, six photos maximum et 10 Mo par fichier. Les HEIC sont convertis automatiquement en JPEG sur cet appareil, avec conservation de la résolution. Cette conversion reste nécessaire pour afficher et transmettre la photo du verso. Un fichier illisible est refusé sans remplacer la photo précédente.
 
-**Formats acceptés : HEIC / HEIF, JPEG, PNG et WebP**, jusqu’à 10 Mo par fichier et six photos par carte. Vous pouvez sélectionner directement les fichiers `.HEIC` de votre iPhone pour le recto, le verso et les détails. L’application les convertit automatiquement en JPEG sur cet appareil, en gardant la résolution. Ces JPEG servent ensuite à l’OCR, aux sauvegardes et à Vinted. Aucun outil de conversion externe n’est nécessaire. Si le fichier est illisible, une erreur apparaît et la photo précédente est conservée.
+## 2. Vérification, puis Vinted
 
-### 2. Vérification
+Contrôlez le nom et le numéro lus, choisissez l’état et votre prix. En cas de lecture partielle, complétez uniquement ce qui manque. Aucun champ d’extension, de variante ni texte brut de l’OCR n’est affiché.
 
-Consultez la fiche de la carte à droite sur ordinateur, ou au-dessus du formulaire sur téléphone. Les boutons **Recto** et **Verso** changent la face affichée. Touchez la photo pour l’agrandir ; utilisez la croix ou la touche Échap pour fermer l’aperçu.
+Utilisez **Recto** et **Verso** dans la fiche pour consulter les deux faces ; touchez la photo pour l’agrandir. Échap ou la croix ferme l’aperçu. Les liens **Comparer les annonces Vinted** et **Comparer les annonces Cardmarket** ouvrent les recherches dans un autre onglet. Une tendance Cardmarket disponible peut être choisie comme point de départ ; elle ne garantit pas le prix selon l’état.
 
-Vérifiez le nom et le numéro remplis, puis choisissez l’état de la carte et votre prix. Si la lecture est partielle, seul le champ manquant est à compléter. L’extension et la variante sont facultatives.
+Cliquez sur **Valider et remplir Vinted**. Ce bouton confirme vos informations, prépare le texte et ouvre directement le formulaire Vinted par le compagnon. L’application reste sur la vérification, sans écran Annonce intermédiaire.
 
-Si une tendance Cardmarket est disponible, vous pouvez la choisir comme point de départ. Elle ne représente pas un prix garanti selon l’état. Les liens **Comparer les annonces Vinted** et **Comparer les annonces Cardmarket** permettent de consulter les offres dans un nouvel onglet. Cardmarket recherche le nom et le numéro de collection (par exemple « Dracaufeu 010 » pour « 010/078 ») ; les comparables détaillés restent accessibles dans **Options avancées**.
+Le titre contient uniquement Pokémon, le nom et le numéro complet, par exemple **Pokémon Magirêve 212/193**. La description garde ses trois lignes : carte, langue et état. Un prix entier est saisi comme `3`, sans `3.00` ; les centimes sont conservés.
 
-Cliquez sur **Valider ma carte et créer l’annonce**. Les champs incomplets sont signalés au même endroit. Cette validation confirme que vous avez examiné les deux faces et les défauts.
+Si le compagnon est absent ou trop ancien, ses instructions s’ouvrent sur place. Le compagnon reste en **0.2.10** : s’il est déjà installé pour cette adresse, aucune réinstallation n’est nécessaire. Après installation, rechargez l’application et validez à nouveau. Voir [le guide Vinted](VINTED.md).
 
-### 3. Annonce
+Sur Vinted, vérifiez le résultat et les éventuels champs restants, puis publiez. Pour la carte suivante, revenez dans l’application et cliquez sur **Scanner**. Le texte personnalisé et le ZIP restent disponibles dans des volets secondaires de la vérification, une fois l’annonce préparée.
 
-Le titre généré contient uniquement Pokémon, le nom et le numéro complet, par exemple **Pokémon Magirêve 212/193**, sans extension, langue ni variante. La description tient sur trois lignes (carte, langue et état). Sur Vinted, un prix entier est saisi comme `3`, sans `3.00`. Relisez l’aperçu. Pour une correction de texte, ouvrez **Modifier le titre ou la description**. Pour corriger l’état ou le prix, choisissez **Modifier les informations**, puis validez à nouveau. Une actualisation demandera votre accord avant de remplacer votre texte personnalisé.
+## Reprendre et conserver ses données
 
-Cliquez sur **Remplir mon annonce sur Vinted**. Installez le compagnon Chrome / Edge une seule fois si ce n’est pas déjà fait. Sur Vinted, vérifiez le résultat et les éventuels champs restants, puis publiez votre annonce. Le détail de l’installation est dans [le guide Vinted](VINTED.md).
+La saisie est automatiquement sauvegardée après une courte pause et à la sortie d’un champ, sans mention d’enregistrement permanente. Le rechargement reprend la carte et l’étape en cours. Les erreurs de sauvegarde restent signalées.
 
-Le volet **Copier le texte ou télécharger les photos** donne accès au transfert manuel et au ZIP. Le volet **Suivre cette annonce** permet de déclarer la publication après avoir ajouté son lien, puis de marquer la carte vendue.
+Les anciennes cartes et sauvegardes sont conservées. Un ancien lien vers une annonce revient à sa vérification. Pour les opérations de maintenance, les pages historiques restent accessibles directement : `#/cards` pour la collection et `#/settings` pour exporter ou restaurer une sauvegarde. Ces pages ne figurent plus dans le menu. Une restauration ajoute les cartes sans écraser les existantes, dans la limite de 50 Mo, 500 cartes et six photos par carte.
 
-## Reprendre plus tard
-
-Votre saisie est enregistrée après une courte pause et quand vous quittez un champ. Le statut en haut indique l’enregistrement. Le rechargement garde la carte et l’étape en cours ; le bouton précédent du navigateur permet de revenir à une page précédente.
-
-Depuis **Accueil**, choisissez **Reprendre mon brouillon**. Depuis **Mes cartes**, cliquez sur une carte : elle s’ouvre à l’étape correspondant à sa préparation. La recherche accepte un nom, un numéro ou une extension, avec ou sans accents. Les filtres regroupent les cartes à préparer, prêtes, en vente, vendues et archivées.
-
-## Sauvegarder ses cartes
-
-Dans **Paramètres → Mes sauvegardes**, choisissez **Exporter l’inventaire**. Ce fichier contient les cartes et leurs photos. **Restaurer une sauvegarde** ajoute les cartes à votre collection sans remplacer celles qui existent déjà.
-
-Les cartes sont conservées dans ce navigateur, sur cet appareil. Pour changer de navigateur ou d’appareil, exportez puis restaurez une sauvegarde. Les limites actuelles de restauration sont 50 Mo, 500 cartes et six photos par carte.
-
-## Utiliser un téléphone
-
-Les photos, la vérification, la préparation des annonces, la collection et les sauvegardes sont accessibles sur téléphone. Le remplissage automatique de Vinted requiert le compagnon Chrome / Edge sur ordinateur. Sur téléphone, vous pouvez copier les textes, exporter les photos ou transférer votre collection par sauvegarde pour la reprendre sur ordinateur.
-
-## Retrouver de l’aide
-
-**Aide** explique les étapes, l’état, les prix, l’enregistrement et les problèmes de remplissage. **Paramètres → Connexion à Vinted** affiche l’état du compagnon et permet de vérifier sa connexion. Pour une erreur de remplissage, le panneau du compagnon dans Vinted propose la reprise et un diagnostic.
+Les données restent dans ce navigateur, sur cet appareil. Pour changer de navigateur ou d’appareil, exportez puis restaurez une sauvegarde. Le remplissage automatique Vinted nécessite Chrome ou Edge sur ordinateur ; sur téléphone, les photos, la vérification et les exports restent utilisables.

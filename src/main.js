@@ -112,8 +112,8 @@ function setSaveStatus(message, error = false) {
   saveStatusError = error;
   const status = document.querySelector("#save-status");
   if (status) {
-    status.textContent = message;
-    status.classList.toggle("save-error", error);
+    status.textContent = error ? message : "";
+    status.hidden = !error;
   }
 }
 function log(action) {
@@ -190,6 +190,7 @@ function renderQuickEditor() {
       message: quickMessage,
       errors: reviewErrors,
       previewSide,
+      transfer: quickStage === "review" ? vintedReviewView() : "",
     }),
   );
 }
@@ -200,7 +201,7 @@ function focusStage() {
   heading?.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: "instant" });
 }
-async function prepareQuickCard(useAI) {
+async function prepareQuickCard() {
   quickMessage = "Préparation en cours…";
   active.identityConfirmed = false;
   active.conditionConfirmed = false;
@@ -216,73 +217,32 @@ async function prepareQuickCard(useAI) {
   active.name = "";
   active.number = "";
   candidates = [];
-  let result;
-  let aiVariant = "";
-  let detectedNumber = "";
-  if (useAI) {
-    try {
-      const ai = await analyzePhotos(active);
-      active.aiAnalysis = ai;
-      active.name = ai.name || active.name;
-      active.number = ai.number || active.number;
-      active.set = ai.set || active.set;
-      active.variant = ai.variant || "";
-      if (["fr", "en"].includes(ai.language)) active.language = ai.language;
-      aiVariant = ai.variant || "";
-      detectedNumber = ai.number || "";
-      if (ai.photosSufficient && ai.condition !== "unknown") {
-        active.condition = ai.condition;
-        active.defectNotes = ai.defects.join("; ");
-      }
-      candidates = await searchCards(
-        active.name,
-        active.number,
-        active.language,
-      );
-    } catch (error) {
-      quickMessage = `IA indisponible : ${error.message} La lecture locale prend le relais.`;
-      toast(quickMessage, true);
-    }
-  }
-  if (
-    !candidates.length &&
-    !(active.aiAnalysis?.name && active.aiAnalysis?.number)
-  ) {
-    let scanStage = "Lecture du recto";
-    result = await recognizePhoto(
-      active.photos.find((p) => p.side === "front").data,
-      active.language,
-      (progress) => {
-        const status = document.querySelector("#job-status");
-        if (status) status.textContent = `${scanStage} : ${progress} %`;
-      },
-      (stage) => {
-        scanStage = stage;
-        const status = document.querySelector("#job-status");
-        if (status) status.textContent = stage;
-      },
-    );
-    active.ocrText = result.text;
-    active.scanDiagnostics = result.diagnostics;
-    active.name = result.name || active.aiAnalysis?.name || "";
-    detectedNumber = result.number;
-    active.number = result.number || active.aiAnalysis?.number || "";
-    candidates = result.matches;
-  }
+  let scanStage = "Lecture du recto";
+  const result = await recognizePhoto(
+    active.photos.find((p) => p.side === "front").data,
+    active.language,
+    (progress) => {
+      const status = document.querySelector("#job-status");
+      if (status) status.textContent = `${scanStage} : ${progress} %`;
+    },
+    (stage) => {
+      scanStage = stage;
+      const status = document.querySelector("#job-status");
+      if (status) status.textContent = stage;
+    },
+  );
+  active.ocrText = result.text;
+  active.scanDiagnostics = result.diagnostics;
+  active.name = result.name || "";
+  active.number = result.number || "";
+  candidates = result.matches;
   const resolution = await identifyFromEvidence({
-    number: detectedNumber || active.number,
+    number: active.number,
     name: active.name,
-    set: active.aiAnalysis?.set || "",
+    set: "",
     text: result?.text || "",
   });
-  if (active.catalogId && aiVariant) active.variant = aiVariant;
-  quickMessage = [
-    quickMessage.startsWith("IA indisponible") ? quickMessage : "",
-    resolution.reason,
-    result?.warning,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  quickMessage = [resolution.reason, result?.warning].filter(Boolean).join(" ");
   await persist();
   quickStage = "review";
   render();
@@ -345,8 +305,8 @@ function priceView(e) {
     ],
   )}${input("Prix de mise en vente choisi (€)", "price", active.price, "number", 'min="0.01" step="0.01"')}</div>${e.available ? btn(`Utiliser le prix conseillé : ${money(e.price)}`, "apply-price", "secondary") : ""}<p class="muted">Vous pouvez saisir votre propre prix. Les indicateurs ne garantissent pas une vente.</p></div>`;
 }
-function vintedInstallationView() {
-  return `<details id="vinted-install"><summary>${vintedHelper.connected && !vintedHelper.ready ? "Mettre à jour le compagnon Vinted" : "Activer le remplissage Vinted (une seule fois)"}</summary><p>Sur cet ordinateur, utilisez le compagnon dans Chrome ou Edge.</p><ol><li>${btn("Télécharger l’extension Chrome / Edge", "vinted-extension-download", "secondary")} puis décompressez le ZIP.</li><li>Si l’extension est déjà installée, remplacez les fichiers du dossier déjà chargé avec ceux du ZIP. Dans <strong>chrome://extensions</strong> (ou <strong>edge://extensions</strong>), cliquez sur la flèche circulaire « Recharger » de Poke Scan Sell — Vinted.</li><li>Pour une première installation, activez le mode développeur, cliquez sur « Charger l’extension non empaquetée » et sélectionnez le dossier <strong>poke-scan-sell-vinted</strong>.</li><li>Rechargez les onglets de cette application et de Vinted, puis relancez « Remplir mon annonce sur Vinted ».</li></ol><p class="muted">Le compagnon téléchargé est associé à l’adresse de cette application. Les photos transitent dans ce navigateur avant leur envoi à Vinted. Votre connexion se fait directement sur Vinted.</p></details>`;
+function vintedInstallationView(hideWhenReady = false) {
+  return `<details id="vinted-install" ${hideWhenReady && vintedHelper.ready ? "hidden" : ""}><summary>${vintedHelper.connected && !vintedHelper.ready ? "Mettre à jour le compagnon Vinted" : "Activer le remplissage Vinted (une seule fois)"}</summary><p>Sur cet ordinateur, utilisez le compagnon dans Chrome ou Edge.</p><ol><li>${btn("Télécharger l’extension Chrome / Edge", "vinted-extension-download", "secondary")} puis décompressez le ZIP.</li><li>Si l’extension est déjà installée, remplacez les fichiers du dossier déjà chargé avec ceux du ZIP. Dans <strong>chrome://extensions</strong> (ou <strong>edge://extensions</strong>), cliquez sur la flèche circulaire « Recharger » de Poke Scan Sell — Vinted.</li><li>Pour une première installation, activez le mode développeur, cliquez sur « Charger l’extension non empaquetée » et sélectionnez le dossier <strong>poke-scan-sell-vinted</strong>.</li><li>Rechargez les onglets de cette application et de Vinted, puis cliquez sur « Valider et remplir Vinted ».</li></ol><p class="muted">Le compagnon téléchargé est associé à l’adresse de cette application. Les photos transitent dans ce navigateur avant leur envoi à Vinted. Votre connexion se fait directement sur Vinted.</p></details>`;
 }
 function vintedConnectionText() {
   if (!vintedHelper.connected)
@@ -354,6 +314,38 @@ function vintedConnectionText() {
   if (!vintedHelper.ready)
     return `Compagnon Vinted v${vintedHelper.version} : mise à jour nécessaire. Téléchargez la nouvelle extension et rechargez-la dans Chrome / Edge.`;
   return `Compagnon Vinted connecté · v${vintedHelper.version}.`;
+}
+function vintedReviewView() {
+  return `<div id="vinted-review-transfer"><p id="vinted-connection-status" class="connection-status" ${vintedHelper.ready ? "hidden" : ""}>${esc(vintedConnectionText())}</p><p id="vinted-transfer-status" role="status" aria-live="polite">${esc(active.vintedTransferMessage || "")}</p>${vintedInstallationView(true)}${active.title || active.listingFingerprint ? `<details class="edit-listing"><summary>Modifier le titre ou la description</summary>${input("Titre de l’annonce", "title", active.title, "text", 'maxlength="500"')}<label class="field">Description<textarea data-field="description" rows="4" maxlength="20000">${esc(active.description)}</textarea></label></details><details class="manual-tools"><summary>Copier le texte ou télécharger les photos</summary><div class="actions">${btn("Copier le titre", "copy-title", "secondary")}${btn("Copier la description", "copy-description", "secondary")}${btn(icon("download") + " Télécharger le dossier ZIP", "listing-zip", "secondary", listingReady(active) ? "" : "disabled")}</div></details>` : ""}</div>`;
+}
+async function fillVinted() {
+  makeVintedDraft(active);
+  vintedHelper = await checkVintedHelper();
+  if (!vintedHelper.ready) {
+    render();
+    const instructions = document.querySelector("#vinted-install");
+    if (instructions) {
+      instructions.hidden = false;
+      instructions.open = true;
+      instructions.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    toast(
+      vintedHelper.connected
+        ? "Mettez à jour l’extension puis rechargez-la dans Chrome / Edge."
+        : "Activez le compagnon une seule fois, puis validez à nouveau.",
+    );
+    return;
+  }
+  const transfer = await sendToVinted(active, (message) => {
+    const status = document.querySelector("#vinted-transfer-status");
+    if (status) status.textContent = message;
+  });
+  active.vintedTransferId = transfer.id;
+  active.vintedTransferMessage =
+    "Annonce envoyée au compagnon. Le remplissage reprend dès que le formulaire Vinted est accessible.";
+  log("Annonce et photos transmises au compagnon Vinted");
+  await persist();
+  render();
 }
 function vintedTransferView(errors) {
   return `<div class="transfer"><div class="transfer-heading"><span class="transfer-icon">${icon("external")}</span><div><h3>Envoyer l’annonce sur Vinted</h3><p>Les photos, le texte, le prix et l’état sont préremplis dans le formulaire.</p></div></div><p id="vinted-connection-status" class="connection-status">${esc(vintedConnectionText())}</p><div class="actions">${btn(icon("arrow") + " Remplir mon annonce sur Vinted", "vinted-fill", "primary", errors.length ? "disabled" : "")}</div><p id="vinted-transfer-status" role="status" aria-live="polite">${esc(active.vintedTransferMessage || "Relisez le formulaire et les photos dans Vinted avant de cliquer sur Publier.")}</p>${vintedInstallationView()}</div>`;
@@ -389,7 +381,7 @@ function routeForView() {
     return `#/cards/${active.id}/${quickMode ? quickStage : `advanced/${step}`}`;
   return (
     {
-      dashboard: "#/",
+      dashboard: "#/dashboard",
       inventory: "#/cards",
       settings: "#/settings",
       help: "#/help",
@@ -423,13 +415,24 @@ function openPhoto(side) {
   dialog.showModal();
 }
 
+function openCurrentCard() {
+  active =
+    cards.find((c) => !["Archivée", "Vendue", "Publiée"].includes(c.status)) ||
+    newCard();
+  if (!cards.some((c) => c.id === active.id)) cards.unshift(active);
+  view = "editor";
+  quickMode = true;
+  quickStage = cardStage(active);
+  reviewErrors = {};
+  quickMessage = "";
+}
 function readRoute() {
   const parts = location.hash.replace(/^#\/?/, "").split("/");
   if (parts[0] === "cards" && parts[1]) {
     if (active?.id !== parts[1]) previewSide = "front";
     active = cards.find((c) => c.id === parts[1]);
     if (!active) {
-      view = "inventory";
+      openCurrentCard();
       return;
     }
     view = "editor";
@@ -438,14 +441,17 @@ function readRoute() {
     quickStage = ["photos", "review", "listing"].includes(parts[2])
       ? parts[2]
       : cardStage(active);
-    if (quickStage === "listing" && !listingReady(active))
-      quickStage = "review";
+    if (quickStage === "listing") quickStage = "review";
     reviewErrors = {};
     quickMessage = "";
-  } else
-    view =
-      { cards: "inventory", settings: "settings", help: "help" }[parts[0]] ||
-      "dashboard";
+  } else if (["cards", "settings", "help", "dashboard"].includes(parts[0])) {
+    view = {
+      cards: "inventory",
+      settings: "settings",
+      help: "help",
+      dashboard: "dashboard",
+    }[parts[0]];
+  } else openCurrentCard();
 }
 let firstRender = true;
 function render(preserveFocus = false, updateRoute = true) {
@@ -659,32 +665,7 @@ app.addEventListener("click", async (event) => {
       return;
     }
     if (action === "vinted-fill") {
-      await runJob("Connexion au compagnon Vinted…", async () => {
-        makeVintedDraft(active);
-        vintedHelper = await checkVintedHelper();
-        if (!vintedHelper.ready) {
-          render();
-          const instructions = document.querySelector("#vinted-install");
-          instructions.open = true;
-          instructions.scrollIntoView({ behavior: "smooth", block: "start" });
-          toast(
-            vintedHelper.connected
-              ? "Mettez à jour l’extension puis rechargez-la dans Chrome / Edge."
-              : "Activez le compagnon une seule fois, puis rechargez l’application.",
-          );
-          return;
-        }
-        const transfer = await sendToVinted(active, (message) => {
-          const status = document.querySelector("#vinted-transfer-status");
-          if (status) status.textContent = message;
-        });
-        active.vintedTransferId = transfer.id;
-        active.vintedTransferMessage =
-          "Annonce envoyée au compagnon. Le remplissage reprend dès que le formulaire Vinted est accessible.";
-        log("Annonce et photos transmises au compagnon Vinted");
-        await persist();
-        render();
-      });
+      await runJob("Connexion au compagnon Vinted…", fillVinted);
       return;
     }
     if (["dashboard", "inventory", "settings", "help"].includes(action)) {
@@ -716,12 +697,14 @@ app.addEventListener("click", async (event) => {
       reviewErrors = {};
       quickMessage = "";
       if (!cards.some((c) => c.id === active.id)) cards.unshift(active);
-      await persist();
       view = "editor";
       step = 0;
       candidates = [];
       render();
       focusStage();
+      // Render before the first await: the photo inputs must stay mounted
+      // when a file is selected immediately after clicking Scanner.
+      await persist();
       return;
     }
     if (action === "edit") {
@@ -756,11 +739,8 @@ app.addEventListener("click", async (event) => {
       return;
     }
     if (action === "quick-prepare") {
-      const useAI = document.querySelector("#quick-ai").checked;
       candidates = [];
-      await runJob("Préparation de votre carte…", () =>
-        prepareQuickCard(useAI),
-      );
+      await runJob("Préparation de votre carte…", () => prepareQuickCard());
       return;
     }
     if (action === "use-trend") {
@@ -787,30 +767,29 @@ app.addEventListener("click", async (event) => {
         toast(errors.join(" ") || "Complétez les champs indiqués.", true);
         return;
       }
-      if (listingReady(active)) {
-        quickStage = "listing";
-        render();
-        focusStage();
-        return;
-      }
       if (
+        !listingReady(active) &&
         active.title &&
         !confirm(
           "Actualiser le texte de l’annonce et remplacer vos corrections ?",
         )
       )
         return;
-      active.identityConfirmed = true;
-      active.conditionConfirmed = true;
-      Object.assign(active, generateListing(active));
-      active.listingFingerprint = listingFingerprint(active);
-      active.status = "Prête";
-      log("Carte vérifiée et annonce générée en mode rapide");
-      await persist();
-      quickStage = "listing";
-      reviewErrors = {};
-      render();
-      focusStage();
+      await runJob("Préparation et envoi vers Vinted…", async () => {
+        if (!listingReady(active)) {
+          active.identityConfirmed = true;
+          active.conditionConfirmed = true;
+          Object.assign(active, generateListing(active));
+          active.listingFingerprint = listingFingerprint(active);
+          active.status = "Prête";
+          log("Carte vérifiée et annonce générée en mode rapide");
+          await persist();
+        }
+        quickStage = "review";
+        reviewErrors = {};
+        render();
+        await fillVinted();
+      });
       return;
     }
     if (action === "save-vision-access") {
@@ -1216,6 +1195,12 @@ app.addEventListener("change", (event) =>
           '[data-action="vinted-fill"], [data-action="listing-zip"]',
         ))
           button.disabled = !listingReady(active);
+        const validate = app.querySelector('[data-action="quick-validate"]');
+        if (validate)
+          validate.disabled = !!(
+            active.listingFingerprint &&
+            (!active.title?.trim() || !active.description?.trim())
+          );
       }
       if (
         [
@@ -1394,7 +1379,13 @@ try {
 async function refreshVintedConnection() {
   vintedHelper = await checkVintedHelper();
   const connection = document.querySelector("#vinted-connection-status");
-  if (connection) connection.textContent = vintedConnectionText();
+  if (connection) {
+    connection.textContent = vintedConnectionText();
+    if (view === "editor" && quickMode) connection.hidden = vintedHelper.ready;
+  }
+  const installation = document.querySelector("#vinted-install");
+  if (installation && view === "editor" && quickMode)
+    installation.hidden = vintedHelper.ready;
   if (!vintedHelper.ready || !active?.vintedTransferId) return;
   const card = active;
   try {
@@ -1418,6 +1409,8 @@ window.addEventListener("hashchange", () => {
     return;
   }
   readRoute();
+  if (location.hash !== routeForView())
+    history.replaceState(null, "", routeForView());
   render(false, false);
   focusStage();
 });

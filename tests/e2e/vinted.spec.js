@@ -1,3 +1,4 @@
+import { advanced, expectSaved } from "./support/app.js";
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import JSZip from "jszip";
@@ -432,9 +433,7 @@ test("application : extension absente, installation guidée et ZIP associé uniq
   page,
 }) => {
   await readyCard(page);
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#vinted-install")).toHaveAttribute("open", "");
   const event = page.waitForEvent("download");
   await page
@@ -480,9 +479,7 @@ test("application : un clic transmet texte et photos, puis une modification bloq
     };
   });
   await readyCard(page);
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#vinted-transfer-status")).toContainText(
     "Annonce envoyée",
   );
@@ -500,13 +497,12 @@ test("application : un clic transmet texte et photos, puis une modification bloq
   );
   expect(actual[0].draft.photos.map((p) => p.side)).toEqual(["front", "back"]);
   expect(actual[1].data).toBe(data);
-  await page.getByRole("button", { name: "Modifier les informations" }).click();
   await page.locator('[data-field="price"]').fill("15");
   await page.locator('[data-field="price"]').blur();
   await expect(
     page.getByRole("button", { name: "3 Annonce", exact: true }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  ).toHaveCount(0);
+  await advanced(page);
   await page.getByRole("button", { name: "5 Annonce" }).click();
   await expect(
     page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
@@ -695,9 +691,7 @@ test("application : un ancien compagnon demande la mise à jour et aucun transfe
   await expect(page.locator("#vinted-connection-status")).toContainText(
     "mise à jour nécessaire",
   );
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#vinted-install")).toHaveAttribute("open", "");
   await expect(page.locator("#vinted-install")).toContainText("Recharger");
   expect(

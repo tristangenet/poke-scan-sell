@@ -1,4 +1,21 @@
-# Validation — version 0.4.3
+# Validation — version 0.5.0
+
+## Photos → Vérification → Vinted — 0.5.0
+
+Vérifications du 27 octobre 2026 : construction de production Vite réussie, **40 tests Node** et **66 parcours navigateur Chromium 153** réussis après la correction. Les tests utilisent la configuration de polices du système, comme pour la version précédente.
+
+- L’entrée ouvre directement le scan, sans barre latérale ni navigation Accueil, Mes cartes, Aide ou Paramètres. Les mentions normales d’enregistrement et le lien Besoin d’aide sont absents ; la sauvegarde, sa reprise et les erreurs de champs restent vérifiées.
+- Les étapes sont limitées à Photos et Vérification. La langue est française par défaut ; un parcours choisit l’anglais, valide la carte et vérifie la description EN après rechargement.
+- L’import PNG instrumenté compte un seul accès aux pixels pour le recto et le verso réunis : le verso est conservé sans cette analyse et sans avertissement de qualité. Le scan exécute l’OCR du recto et ne fait aucun appel `/api/vision`. Les importations HEIC/HEIF réelles, la conversion en JPEG, les fichiers corrompus et la conservation des octets restent couverts.
+- Les champs d’extension, de variante et le texte brut OCR sont absents de la vérification ; les métadonnées catalogue restent enregistrées pour les prix. Les textes personnalisés, les anciens formats de titres et les sauvegardes restent conservés.
+- Le parcours HEIC exécute conversion et OCR réels, choisit état/prix, puis double-clique sur la validation. Un seul onglet Vinted de contrôle reçoit le titre, la description, le prix exact, l’état et les deux JPEG identiques aux fichiers enregistrés. L’application reste à la route de vérification ; aucun écran Annonce ni second bouton d’envoi n’est utilisé.
+- Le compagnon absent ou ancien ouvre les instructions dans la vérification sans perdre le brouillon. Les reprises, la connexion Vinted, les sélecteurs d’état, les prix avec centimes et le refus d’écraser un autre brouillon restent couverts.
+
+La nouvelle entrée directe a révélé une concurrence entre le bouton Scanner et un import immédiatement consécutif : le rendu après sauvegarde pouvait détacher le champ fichier avant son événement. Le scan rend maintenant ses champs avant sa première attente asynchrone. Les trois parcours concernés passent après correction, puis la suite complète de 66 parcours passe.
+
+Inspection visuelle des photos et de la vérification à 320, 390, 768 et 1440 pixels ; contrôles de débordement, clavier, agrandissement et retour du focus réussis. Les photos de collection des tests d’interface sont synthétiques. Les pages historiques et les sauvegardes restent testées par lien direct, sans les réintroduire dans le menu.
+
+Le compagnon reste en **0.2.10**, sans changement de protocole. Les APIs Chrome et les formulaires Vinted sont simulés avec les scripts réels du compagnon et sa file IndexedDB. Aucun compte Vinted ni annonce réelle n’a été utilisé ; aucun test ne clique sur Publier.
 
 ## Titre limité au nom et au numéro — 0.4.3
 

@@ -1,6 +1,6 @@
-# Design de Poke Scan Sell — 0.4.0
+# Design de Poke Scan Sell — 0.5.0
 
-L’application accompagne une carte physique jusqu’à son annonce. Son identité s’inspire du Pokédex et du classeur de cartes : une navigation bleu nuit, une action de scan rouge, des références jaunes et les photos de l’exemplaire au premier plan.
+L’application accompagne une carte physique jusqu’à son annonce. Son identité s’inspire du Pokédex et du classeur de cartes : des titres bleu nuit, une action de scan rouge, des références jaunes et les photos de l’exemplaire au premier plan.
 
 ## Repères visuels
 
@@ -20,21 +20,19 @@ Les statuts comportent aussi du texte. La couleur seule ne porte aucune informat
 
 ## Navigation
 
-Sur ordinateur, la navigation reste dans la colonne de gauche : Accueil, Mes cartes, Scanner, Aide et Paramètres. La sauvegarde de la collection y est accessible.
+L’application s’ouvre directement sur le scan ou la vérification en cours. L’en-tête contient la marque et l’action Scanner. La barre latérale, la barre mobile et les liens Accueil, Mes cartes, Aide, Paramètres et Besoin d’aide ont été retirés. Le contenu utilise la largeur disponible et ne réserve plus de place pour ces menus. Les sauvegardes normales sont silencieuses ; les erreurs restent visibles.
 
-Sur téléphone et tablette étroite, la navigation passe en bas de l’écran. Scanner occupe le centre avec un bouton rouge. L’application réserve de la place pour cette barre et la zone de sécurité du téléphone. Les champs gardent une taille de texte de 16 pixels sur mobile.
+Sur téléphone, les champs gardent une taille de texte de 16 pixels. Les deux étapes et le bouton principal restent accessibles sans débordement à 320 pixels.
 
 ## Le parcours de vente
 
-1. **Photos** : deux emplacements illustrent les zones utiles sur le recto et le verso. Le compteur repose sur les faces effectivement ajoutées. La préparation reste désactivée si une face manque.
+1. **Photos** : deux emplacements illustrent les zones utiles sur le recto et le verso. Le compteur repose sur les faces effectivement ajoutées. La préparation reste désactivée si une face manque. Le recto seul est analysé ; le verso sert à l’annonce. La langue se choisit dans un volet optionnel, avec le français par défaut.
 2. **Vérification** : identité, état et prix sont regroupés. La fiche permet de consulter les deux faces et d’agrandir une photo originale sans quitter le formulaire. Les annonces Vinted et Cardmarket s’ouvrent dans un autre onglet.
-3. **Annonce** : la photo, le titre, la description et le prix composent l’aperçu. Le bouton de transfert prend la couleur turquoise de cet espace. La correction du texte et les outils complémentaires restent accessibles dans les volets.
-
-Les éditions et variantes restent facultatives. La validation de la carte conserve les règles existantes ; le design ne transforme pas une suggestion ou un transfert en publication confirmée.
+   Le bouton **Valider et remplir Vinted** prépare le texte et ouvre directement le formulaire Vinted. Il n’existe plus d’étape Annonce dans ce parcours. Les champs d’extension, de variante et le texte brut de l’OCR sont retirés. Si le compagnon manque, ses instructions s’ouvrent dans la vérification. Le texte et le ZIP restent dans des volets secondaires après la préparation.
 
 ## Reprise et collection
 
-Les compteurs de l’accueil ouvrent les cartes concernées. Ils proviennent des données locales. Les cartes du classeur montrent leur photo, numéro, langue, statut de préparation et prix choisi. Les recherches, filtres et tris s’appliquent sans modifier les exemplaires.
+Les cartes locales sont conservées. L’ouverture reprend un brouillon et le bouton Scanner commence une autre carte. Les pages historiques de collection et de sauvegarde restent accessibles par lien direct, sans menu supplémentaire.
 
 Les saisies restent automatiquement enregistrées. Le champ actif, les volets ouverts et la face consultée sont conservés lors d’un rafraîchissement du formulaire. Un changement de carte remet l’aperçu sur le recto.
 

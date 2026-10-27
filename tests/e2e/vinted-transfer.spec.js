@@ -170,15 +170,16 @@ for (const sample of [
       { data, sample },
     );
     await page.reload();
+    await page.goto("/#/cards");
     await page.locator(".collection-card").first().click();
     const title = `Pokémon ${sample.name} ${sample.number}`;
     const description = `Carte Pokémon ${sample.name} — ${sample.number}.\nLangue : FR.\nÉtat : Near Mint — quasi neuf.`;
-    await expect(page.locator("#listing-preview-title")).toHaveText(title);
-    await expect(page.locator("#listing-preview-description")).toHaveText(
+    await expect(page.locator('[data-field="title"]')).toHaveValue(title);
+    await expect(page.locator('[data-field="description"]')).toHaveValue(
       description,
     );
     await page
-      .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
+      .getByRole("button", { name: "Valider et remplir Vinted" })
       .click();
     await expect(page.locator("#vinted-transfer-status")).toContainText(
       "Annonce envoyée",
@@ -243,9 +244,14 @@ test("photos HEIC : conversion réelle, OCR, ZIP puis deux JPEG reçus par le fo
   await page.locator('[data-field="price"]').fill("12.25");
   await page.locator('[data-field="price"]').blur();
   await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
+    .getByRole("button", { name: "Valider et remplir Vinted" })
+    .dblclick();
 
+  await expect(page).toHaveURL(/\/review$/);
+  await expect(page.locator("#vinted-transfer-status")).toContainText(
+    "Annonce envoyée",
+  );
+  expect(tabs.size).toBe(1);
   await page.locator(".manual-tools summary").click();
   const event = page.waitForEvent("download");
   await page
@@ -262,9 +268,6 @@ test("photos HEIC : conversion réelle, OCR, ZIP puis deux JPEG reçus par le fo
       Buffer.from(jpegData[i].split(",")[1], "base64"),
     );
 
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
   await expect(page.locator("#vinted-transfer-status")).toContainText(
     "Annonce envoyée",
   );
@@ -294,9 +297,7 @@ test("transfert complet : application → file IndexedDB → onglet Vinted → r
   await expect(page.locator("#vinted-connection-status")).toContainText(
     "connecté",
   );
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#vinted-transfer-status")).toContainText(
     "Annonce envoyée",
   );
@@ -348,9 +349,7 @@ test("transfert : garde le brouillon si l’état échoue puis termine la repris
 }) => {
   const tabs = await companion(page, context, false, { rejected: true });
   await readyCard(page);
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#vinted-transfer-status")).toContainText(
     "Annonce envoyée",
   );
@@ -421,9 +420,7 @@ test("transfert : connexion en attente, reprise sur le même onglet et rejet d�
     }
   });
   expect(rejected).toContain("non associée");
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#vinted-transfer-status")).toContainText(
     "Annonce envoyée",
   );

@@ -1,38 +1,19 @@
 # Poke Scan Sell
 
-De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses informations et préparez sa vente sur Vinted.
+Photographiez une carte Pokémon, vérifiez ses informations et remplissez directement son annonce Vinted.
 
-![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
+## Version 0.5.0 — deux écrans, puis Vinted
 
-## Version 0.4.3 — titres limités au nom et au numéro
+L’application s’ouvre directement sur le scan, sans menu Accueil, Mes cartes, Aide ou Paramètres. Le bouton **Scanner** permet de commencer une autre carte. Les mentions d’enregistrement restent silencieuses ; une erreur de sauvegarde est toujours signalée.
 
-Le titre généré contient uniquement **Pokémon, le nom et le numéro complet**, par exemple **Pokémon Magirêve 212/193**. L’extension, la langue et la variante (Holo, reverse…) ne sont pas ajoutées au titre. Les anciens titres générés sont adaptés à l’ouverture des brouillons ; les titres personnalisés et les annonces déjà publiées, vendues ou archivées sont conservés.
+1. **Photos** : ajoutez le recto et le verso, puis cliquez sur **Préparer ma carte**. Seul le recto passe dans l’OCR. Le verso est conservé pour l’annonce, sans analyse de pixels. La langue est française par défaut et reste modifiable dans un volet optionnel. Aucune analyse IA n’est proposée ni appelée dans ce parcours.
+2. **Vérification** : contrôlez le nom et le numéro, choisissez l’état et le prix, puis cliquez sur **Valider et remplir Vinted**. Le texte est préparé et le compagnon ouvre directement le formulaire Vinted avec les photos, le prix et l’état. Aucun passage par un écran Annonce n’est nécessaire.
 
-Depuis la version 0.4.2, la description tient sur trois lignes (carte, langue et état), et un prix entier comme `3` est envoyé sans décimales inutiles. Ces formats sont conservés.
+Les champs d’extension et de variante ainsi que le texte brut de l’OCR ne sont plus affichés dans la vérification. Les liens de comparaison Vinted et Cardmarket et l’agrandissement recto/verso restent disponibles. Le titre contient uniquement Pokémon, le nom et le numéro ; la description conserve ses trois lignes, et les prix entiers sont saisis sans décimales inutiles.
 
-Depuis la version 0.4.1, l’application accepte les photos **HEIC / HEIF**, y compris les fichiers `.HEIC` et ceux sans type MIME. Elles sont converties automatiquement en JPEG sur l’appareil, sans conversion manuelle, pour l’aperçu, l’OCR, les sauvegardes, le ZIP et le compagnon Vinted. La résolution est conservée. Les photos JPEG / PNG / WebP conservent leurs octets d’origine.
+Le **compagnon Vinted reste en version 0.2.10**. S’il est déjà installé, aucune réinstallation n’est nécessaire. Sinon, les instructions s’ouvrent dans la vérification après la validation ; une fois le compagnon installé, le même bouton relance l’envoi. Les textes personnalisés et les cartes enregistrées restent conservés. Un ancien lien d’annonce revient à la vérification.
 
-La version 0.4.0 a refondu tous les écrans autour d’une identité inspirée du Pokédex : bleu nuit, rouge et jaune, logo Poké Ball, cartes illustrées et navigation mobile avec le scan au centre.
-
-- **Accueil** : scan visible, reprise d’un brouillon et compteurs cliquables pour ouvrir les cartes concernées.
-- **Collection** : photos, numéro, langue, avancement et prix, avec recherche et filtres.
-- **Scan** : repères pour le recto et le verso et compteur des deux photos requises.
-- **Vérification** : consultation des deux faces et agrandissement de la photo originale, aussi sur téléphone ; liens Vinted et Cardmarket dans le panneau du prix.
-- **Annonce** : aperçu avec photo, texte modifiable et transfert Vinted bien identifié.
-
-Voir [les principes du design](docs/DESIGN.md).
-
-L’application propose un parcours en **trois écrans : Photos → Vérification → Annonce**, en français, sur ordinateur et téléphone.
-
-1. **Photos** : ajoutez le recto et le verso, puis cliquez sur **Préparer ma carte**. L’OCR lit le nom et le numéro et recherche la référence dans le catalogue.
-2. **Vérification** : contrôlez les informations, choisissez l’état et le prix. L’extension et la variante sont facultatives, dans un volet replié. Une validation prépare l’annonce.
-3. **Annonce** : relisez l’aperçu, ajustez le texte si nécessaire et cliquez sur **Remplir mon annonce sur Vinted**. Le compagnon envoie le texte, les photos, le prix et l’état. Vous vérifiez le formulaire Vinted avant de publier.
-
-L’accueil explique les étapes et propose de reprendre un brouillon. **Mes cartes** regroupe les cartes à préparer, prêtes, en vente, vendues et archivées, avec recherche sans distinction d’accents et tri. **Paramètres** regroupe le compagnon Vinted et les sauvegardes. **Aide** explique les étapes et les questions fréquentes.
-
-La saisie est enregistrée automatiquement après une courte pause et à la sortie d’un champ. Le champ actif et les volets ouverts restent en place. Le rechargement reprend la page et la carte en cours. Les erreurs apparaissent à côté des champs à compléter. Les réglages techniques, outils manuels et options avancées sont accessibles dans des volets secondaires.
-
-Cette version conserve les cartes et sauvegardes existantes et utilise toujours le **compagnon Vinted 0.2.10**. La correction du titre ne nécessite pas de réinstaller ce compagnon. Pour une version plus ancienne, téléchargez le nouveau ZIP depuis l’application, remplacez les fichiers dans le dossier de l’extension déjà chargée et cliquez sur **Recharger** dans `chrome://extensions` ou `edge://extensions`. Actualisez ensuite l’application et Vinted.
+L’identité Pokémon, l’import HEIC / HEIF et les sauvegardes des versions précédentes sont conservés. Voir [le guide d’utilisation](docs/UTILISATION.md) et [les principes du design](docs/DESIGN.md).
 
 ## Ce qui fonctionne
 
@@ -40,10 +21,9 @@ Cette version conserve les cartes et sauvegardes existantes et utilise toujours 
 - OCR Tesseract.js exécuté dans le navigateur et recherche TCGdex avec reprises automatiques.
 - Nom et numéro préremplis quand la lecture permet de les identifier ; corrections manuelles possibles.
 - Extension et variante facultatives. Une édition ambiguë conserve le nom et le numéro sans attribuer le prix d’une autre édition.
-- Analyse IA optionnelle du recto/verso, via un serveur configuré, proposant l’identité, l’état et les défauts.
-- Tendance Cardmarket via TCGdex quand une référence unique est trouvée ; comparables vérifiés et estimation dans les options avancées.
+- Tendance Cardmarket via TCGdex quand une référence unique est trouvée ; comparables vérifiés et estimation conservés dans les outils historiques.
 - Annonce modifiable et transfert Vinted par le compagnon Chrome / Edge ; copier-coller et ZIP en complément.
-- Collection locale, reprise des brouillons, archivage, suivi manuel des publications/ventes, sauvegarde JSON et restauration sans écrasement.
+- Cartes locales et reprise automatique du brouillon ; sauvegardes et outils historiques accessibles par lien direct, sans supprimer les données existantes.
 - Navigation mobile avec libellés, accès au clavier, erreurs associées aux champs et mouvements réduits selon les préférences du navigateur.
 
 Les cartes sont conservées **dans ce navigateur, sur cet appareil**, sans compte ni synchronisation cloud. Pensez à exporter une sauvegarde avant de changer d’appareil ou d’effacer les données du site.
@@ -79,11 +59,11 @@ npm ci
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.4.3**.
+Actualiser l’onglet : le pied de page doit afficher **v0.5.0**.
 
 ## Remplir Vinted
 
-À la première utilisation, ouvrir **Activer le remplissage Vinted**, télécharger et décompresser le ZIP, puis charger le dossier dans `chrome://extensions` ou `edge://extensions` avec le mode développeur activé. Recharger l’application. Le bouton **Remplir mon annonce sur Vinted** transmet ensuite votre annonce et ses photos.
+À la première utilisation, cliquer sur **Valider et remplir Vinted**, puis utiliser les instructions de **Activer le remplissage Vinted**, télécharger et décompresser le ZIP, puis charger le dossier dans `chrome://extensions` ou `edge://extensions` avec le mode développeur activé. Recharger l’application. Le bouton **Valider et remplir Vinted** transmet ensuite votre annonce et ses photos.
 
 Le compagnon est associé à l’origine exacte de l’application qui a fourni le ZIP. Une autre adresse nécessite un nouveau téléchargement. Il attend la connexion sur Vinted, conserve un brouillon préexistant, signale les champs restants et laisse le clic **Publier** au vendeur. Voir [le guide Vinted](docs/VINTED.md).
 
@@ -91,7 +71,7 @@ L’état est choisi depuis celui de la carte : M/NM/EX → « Très bon état �
 
 ## Analyse IA et future offre commerciale
 
-Pour configurer l’analyse IA, suivre [les instructions d’installation](docs/INSTALLATION.md). La clé API reste sur le serveur ; le code d’accès à l’instance se renseigne dans le volet IA des paramètres. L’utilisateur choisit l’analyse IA avant l’envoi des photos. Les propositions restent à vérifier.
+Le service IA historique reste documenté dans [les instructions d’installation](docs/INSTALLATION.md), pour compatibilité. Il n’est pas appelé par le parcours courant, qui utilise uniquement l’OCR du recto et ne nécessite aucune clé API.
 
 L’interface est prête à accueillir une offre publique. Les comptes clients, synchronisation, paiement unique ou abonnement et contrôle des droits côté serveur constituent une évolution distincte. Aucun abonnement, quota commercial ni paiement fictif n’est affiché. Voir [la préparation d’une offre commerciale](docs/OFFRE_COMMERCIALE.md).
 

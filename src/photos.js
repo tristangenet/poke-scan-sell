@@ -82,6 +82,18 @@ export async function readPhoto(file, side, onProgress = () => {}) {
     );
   }
   try {
+    // The back is only an announcement photo. Decode to reject unreadable
+    // files, but skip pixel analysis and quality warnings entirely.
+    const photo = {
+      id: crypto.randomUUID(),
+      side,
+      data,
+      name: file.name,
+      type: file.type,
+      ...(heic ? { convertedFrom: sourceName } : {}),
+      warnings: [],
+    };
+    if (side === "back") return photo;
     const canvas = document.createElement("canvas");
     canvas.width = 256;
     canvas.height = Math.round((256 * img.height) / img.width);
@@ -103,15 +115,7 @@ export async function readPhoto(file, side, onProgress = () => {}) {
       warnings.push("Zone très claire : vérifiez les reflets et les détails.");
     if (Math.min(img.width, img.height) < 600)
       warnings.push("Résolution faible : photographiez la carte de plus près.");
-    return {
-      id: crypto.randomUUID(),
-      side,
-      data,
-      name: file.name,
-      type: file.type,
-      ...(heic ? { convertedFrom: sourceName } : {}),
-      warnings,
-    };
+    return { ...photo, warnings };
   } finally {
     img.close();
   }

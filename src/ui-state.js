@@ -37,7 +37,7 @@ export function listingReady(card) {
 }
 
 export function cardStage(card) {
-  if (listingReady(card)) return "listing";
+  if (listingReady(card)) return "review";
   if (
     card.name ||
     card.number ||

@@ -1,4 +1,4 @@
-# Architecture — version 0.4.3
+# Architecture — version 0.5.0
 
 Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 24 pour le serveur optionnel. Dépendances verrouillées par package-lock.json.
 
@@ -6,7 +6,7 @@ Frontend Vite / JavaScript ES modules, CSS responsive, sans framework. Node.js 2
 | --------------------- | --------------------------------------------------------------------------------- |
 | src/main.js           | Routes, commandes, préparation, autosauvegarde et transfert utilisateur           |
 | src/interface.js      | Navigation commune, accueil, collection, récapitulatif, paramètres et aide        |
-| src/quick-view.js     | Trois écrans du parcours Photos → Vérification → Annonce                          |
+| src/quick-view.js     | Deux écrans Photos → Vérification, puis transfert Vinted                          |
 | src/ui-state.js       | Étape de reprise, validité d’annonce, groupes, tri, recherche et erreurs de champ |
 | src/domain.js         | États, règles de préparation, estimation, empreinte d'annonce                     |
 | src/storage.js        | Transactions IndexedDB                                                            |
@@ -29,15 +29,17 @@ Les contrôles OCR, IA, sauvegarde, ZIP et Vinted reçoivent ainsi des photos da
 
 ## Navigation et saisie
 
-Le parcours par défaut sépare les photos, la vérification et l’annonce. Les options avancées conservent les cinq étapes détaillées. Les champs d’extension/variante, outils de transfert manuel, suivi et configuration IA sont accessibles dans des volets repliés.
+Le parcours courant comporte deux écrans, Photos et Vérification. `prepareQuickCard` appelle uniquement `recognizePhoto` sur le recto ; le choix IA et son appel recto/verso ont été retirés de ce parcours. La langue reste optionnelle, française par défaut. `readPhoto` valide le décodage du verso et assure sa conversion HEIC éventuelle, mais retourne avant le canevas d’analyse des pixels et ne produit pas d’avertissement de qualité pour cette face.
 
-Les routes utilisent le fragment d’URL : `#/`, `#/cards`, `#/help`, `#/settings`, `#/cards/:id/photos|review|listing` et `#/cards/:id/advanced/:step`. Le rechargement et la navigation précédent/suivant reprennent une carte enregistrée. Une route d’annonce périmée ramène à la vérification. Les liens et commandes restent dans le même document.
+L’entrée `#/` reprend le brouillon courant ou ouvre un nouveau scan. Les routes normales sont `#/cards/:id/photos|review`. Les anciens liens `listing` sont remplacés par `review`. Les pages historiques `#/dashboard`, `#/cards`, `#/help`, `#/settings` et `advanced/:step` restent accessibles directement pour compatibilité, sans liens dans le parcours courant. La barre latérale, la navigation mobile, les liens d’aide et les mentions normales de sauvegarde sont retirés. Le bouton Scanner reste dans l’en-tête.
 
-La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistrée dans IndexedDB après 350 ms d’inactivité ou à la sortie du champ. Cela évite de perdre une saisie lorsque la sauvegarde d’un autre champ termine. Les écritures capturent la carte concernée ; le statut affiché suit la réussite ou l’erreur de la transaction. Les rafraîchissements du formulaire conservent le focus, la sélection, la position et les volets ouverts. Les erreurs de validation sont associées aux champs, et la navigation place le focus sur le titre de la page.
+La validation vérifie les informations et les deux photos, génère le texte si nécessaire, enregistre le brouillon puis appelle `fillVinted` dans la même opération. Un brouillon déjà valide conserve ses textes personnalisés. Le compagnon absent ou ancien ouvre ses instructions dans la vérification, sans perdre le brouillon ; une validation ultérieure reprend l’envoi. Les actions sont verrouillées pendant l’opération pour éviter un double transfert. Le démarrage d’un scan rend les champs avant sa première sauvegarde asynchrone, pour ne pas détacher un champ photo utilisé immédiatement.
+
+La valeur d’un champ est appliquée en mémoire dès la saisie, puis enregistrée dans IndexedDB après 350 ms d’inactivité ou à la sortie du champ. Cela évite de perdre une saisie lorsque la sauvegarde d’un autre champ termine. Les écritures capturent la carte concernée ; les sauvegardes normales restent silencieuses et les erreurs sont affichées. Les rafraîchissements du formulaire conservent le focus, la sélection, la position et les volets ouverts. Les erreurs de validation sont associées aux champs, et la navigation place le focus sur le titre de la page.
 
 La collection recherche sans distinction d’accents, filtre par préparation/statut et trie par date, nom ou prix. Les compteurs sont calculés depuis les cartes enregistrées. Les publications et ventes restent des déclarations du vendeur ; un transfert de formulaire n’est pas compté comme une publication.
 
-Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.4.3 ne change pas le protocole ni l’origine autorisée.
+Les anciens schémas, empreintes et identifiants IndexedDB restent compatibles. Le ZIP Vinted distribue le compagnon 0.2.10 ; la version de l’interface 0.5.0 ne change pas le protocole ni l’origine autorisée.
 
 ## Texte et prix d’annonce — 0.4.3
 

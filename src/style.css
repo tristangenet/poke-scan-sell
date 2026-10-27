@@ -3549,3 +3549,64 @@ hr {
     scroll-behavior: auto !important;
   }
 }
+
+/* Parcours direct : photos, vérification, puis formulaire Vinted. */
+.workspace.streamlined {
+  margin-left: 0;
+  padding-bottom: 0;
+}
+.streamlined .topbar {
+  max-width: none;
+}
+.streamlined .brand {
+  color: var(--navy);
+  font-size: 24px;
+}
+.streamlined .brand img {
+  width: 40px;
+  height: 40px;
+}
+.streamlined .brand-light {
+  margin-left: 6px;
+}
+.streamlined .topbar .secondary {
+  min-height: 42px;
+  white-space: nowrap;
+}
+.streamlined main {
+  max-width: 1240px;
+}
+.streamlined .wizard-steps {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.streamlined [hidden] {
+  display: none !important;
+}
+.streamlined #save-status:not([hidden]) {
+  margin: 16px 40px 0;
+}
+#vinted-transfer-status:empty {
+  display: none;
+}
+#vinted-review-transfer .edit-listing,
+#vinted-review-transfer .manual-tools {
+  margin-top: 16px;
+}
+@media (max-width: 480px) {
+  .streamlined .brand {
+    font-size: 18px;
+    gap: 7px;
+  }
+  .streamlined .brand img {
+    width: 30px;
+    height: 30px;
+  }
+  .streamlined .brand-light {
+    margin-left: 3px;
+    font-size: 14px;
+  }
+  .streamlined .topbar .secondary {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}

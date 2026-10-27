@@ -1,3 +1,4 @@
+import { currentCard, expectSaved, advanced } from "./support/app.js";
 import { test, expect } from "@playwright/test";
 
 async function addPhotos(
@@ -70,7 +71,7 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
   await catalogue(page);
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await expect(
@@ -85,8 +86,8 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
     timeout: 45000,
   });
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
-  await expect(page.locator('[data-field="set"]')).toHaveValue("Set de Base");
-  await expect(page.locator('[data-field="variant"]')).toHaveValue("holo");
+  await expectSaved(page, "set", "Set de Base");
+  await expectSaved(page, "variant", "holo");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
   await page
     .getByRole("button", {
@@ -97,15 +98,11 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
   await expect(
     page.locator('[data-field="vintedCondition"], [data-field="packaging"]'),
   ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator("#toast")).toContainText("état");
   await expect(page.locator('[data-field="title"]')).toHaveCount(0);
   await page.locator('[data-field="condition"]').selectOption("EX");
-  await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator('[data-field="title"]')).toHaveValue(/Dracaufeu/);
   await expect(page.locator('[data-field="description"]')).toHaveValue(
     /Excellent/,
@@ -117,15 +114,15 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
   await expect(
     page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
   ).toBeEnabled();
-  await page.getByRole("button", { name: "Modifier les informations" }).click();
   await page.locator('[data-field="price"]').fill("45");
   await page.locator('[data-field="price"]').blur();
+  await expect(page).toHaveURL(/\/review$/);
   await expect(
     page.getByRole("button", { name: "3 Annonce", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByRole("button", { name: "Remplir mon annonce sur Vinted" }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Télécharger le dossier ZIP" }),
+  ).toBeDisabled();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
     await page.evaluate(
@@ -134,9 +131,8 @@ test("mode rapide : OCR, référence, prix et une validation sans champs Vinted 
   ).toBe(true);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: "/tmp/poke-quick-mobile.png", fullPage: true });
-  await page.getByRole("button", { name: "Accueil", exact: true }).click();
   await page.getByRole("button", { name: "Scanner", exact: true }).click();
-  await page.getByRole("button", { name: "Options avancées" }).click();
+  await advanced(page);
   await page.getByRole("button", { name: "5 Annonce" }).click();
   await expect(
     page.locator('[data-field="vintedCondition"], [data-field="packaging"]'),
@@ -150,7 +146,7 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
   await catalogue(page, true);
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page);
@@ -164,8 +160,8 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
   await expect(page.locator(".candidate")).toHaveCount(0);
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
-  await expect(page.locator('[data-field="set"]')).toHaveValue("");
-  await expect(page.locator('[data-field="variant"]')).toHaveValue("");
+  await expectSaved(page, "set", "");
+  await expectSaved(page, "variant", "");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
   await expect(
     page.getByRole("button", {
@@ -175,9 +171,7 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
   await page.locator('[data-field="condition"]').selectOption("EX");
   await page.locator('[data-field="price"]').fill("45");
   await page.locator('[data-field="price"]').blur();
-  await page
-    .getByRole("button", { name: "Valider ma carte et créer l’annonce" })
-    .click();
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
   await expect(page.locator('[data-field="title"]')).toHaveValue(
     "Pokémon Dracaufeu 4/102",
   );
@@ -190,42 +184,45 @@ test("une édition inconnue n’empêche pas de créer l’annonce à partir du 
   ).toBeEnabled();
 });
 
-test("mode IA configuré : identité et état proposés en une préparation", async ({
+test("scan direct : recto seul analysé, verso sans analyse de pixels et aucun appel IA", async ({
   page,
 }) => {
+  test.setTimeout(60000);
   await catalogue(page);
-  await page.route("**/api/vision", (route) =>
-    route.fulfill({
-      json: {
-        name: "Dracaufeu",
-        number: "4/102",
-        set: "Set de Base",
-        variant: "Holo illimité",
-        condition: "EX",
-        confidence: "medium",
-        defects: ["Point blanc au dos"],
-        warnings: [],
-        photosSufficient: true,
-      },
-    }),
-  );
+  const visionCalls = [];
+  await page.route("**/api/vision", (route) => {
+    visionCalls.push(route.request().url());
+    return route.fulfill({ status: 500 });
+  });
   await page.goto("/");
-  await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
-    .first()
-    .click();
+  await expect(page.locator("#quick-ai")).toHaveCount(0);
+  await expect(
+    page.getByText("La suite ? On s’en occupe.", { exact: true }),
+  ).toHaveCount(0);
+  await page.evaluate(() => {
+    window.photoPixelReads = 0;
+    const original = CanvasRenderingContext2D.prototype.getImageData;
+    CanvasRenderingContext2D.prototype.getImageData = function (...args) {
+      window.photoPixelReads++;
+      return original.apply(this, args);
+    };
+  });
   await addPhotos(page);
-  await page.locator(".analysis-options > summary").click();
-  await page.locator("#quick-ai").check();
+  // Image import analyses the front only. The back is stored for the listing.
+  expect(await page.evaluate(() => window.photoPixelReads)).toBe(1);
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
-  await expect(page.locator('[data-field="condition"]')).toHaveValue("EX");
-  await expect(page.locator('[data-field="variant"]')).toHaveValue(
-    "Holo illimité",
-  );
-  await expect(page.locator('[data-field="defectNotes"]')).toHaveValue(
-    "Point blanc au dos",
-  );
-  await expect(page.locator('[data-field="title"]')).toHaveCount(0);
+  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu", {
+    timeout: 45000,
+  });
+  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
+  await expect(page.locator('[data-field="condition"]')).toHaveValue("");
+  await expect(
+    page.locator('[data-field="set"], [data-field="variant"]'),
+  ).toHaveCount(0);
+  expect(visionCalls).toEqual([]);
+  expect(
+    (await currentCard(page)).photos.find((p) => p.side === "back").warnings,
+  ).toEqual([]);
 });
 
 test("plus de 24 références : l’extension cible la bonne carte sans charger les autres fiches", async ({
@@ -264,12 +261,12 @@ test("plus de 24 références : l’extension cible la bonne carte sans charger 
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page);
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
-  await expect(page.locator('[data-field="set"]')).toHaveValue("Extension 28", {
+  await expectSaved(page, "set", "Extension 28", {
     timeout: 45000,
   });
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
@@ -301,18 +298,18 @@ test("fiche détaillée indisponible : identité conservée, prix et variante la
   });
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page);
   await page.getByRole("button", { name: "Préparer ma carte" }).click();
-  await expect(page.locator('[data-field="set"]')).toHaveValue("Set de Base", {
+  await expectSaved(page, "set", "Set de Base", {
     timeout: 45000,
   });
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
-  await expect(page.locator('[data-field="variant"]')).toHaveValue("");
+  await expectSaved(page, "variant", "");
   await expect(page.locator("#job-status")).toContainText(
     "variantes et le prix",
   );
@@ -325,7 +322,7 @@ test("lecture partielle : le nom reste rempli après les tentatives automatiques
   await catalogue(page);
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page, { name: "Dracaufeu", number: "" });
@@ -336,10 +333,12 @@ test("lecture partielle : le nom reste rempli après les tentatives automatiques
   );
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
   await expect(page.locator('[data-field="number"]')).toHaveValue("");
-  await page
-    .getByText("Voir le texte lu sur la photo", { exact: true })
-    .click();
-  await expect(page.locator("pre")).toContainText("Lecture agrandie du numéro");
+  await expect(
+    page.getByText("Voir le texte lu sur la photo", { exact: true }),
+  ).toHaveCount(0);
+  expect((await currentCard(page)).ocrText).toContain(
+    "Lecture agrandie du numéro",
+  );
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
 });
 
@@ -350,7 +349,7 @@ test("numéro non retrouvé : le nom et le numéro lus sont conservés sans prix
   await catalogue(page);
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page, { name: "Dracaufeu", number: "5/102" });
@@ -361,7 +360,7 @@ test("numéro non retrouvé : le nom et le numéro lus sont conservés sans prix
   );
   await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
   await expect(page.locator('[data-field="number"]')).toHaveValue("5/102");
-  await expect(page.locator('[data-field="set"]')).toHaveValue("");
+  await expectSaved(page, "set", "");
   await expect(page.locator('[data-field="price"]')).toHaveValue("");
 });
 
@@ -386,7 +385,7 @@ test("sous-série TG : reconnaissance réelle et numéro imprimé conservé", as
   );
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page, { name: "Mew", number: "TG01/TG30" });
@@ -395,43 +394,34 @@ test("sous-série TG : reconnaissance réelle et numéro imprimé conservé", as
     timeout: 45000,
   });
   await expect(page.locator('[data-field="number"]')).toHaveValue("TG01/TG30");
-  await expect(page.locator('[data-field="set"]')).toHaveValue("Test");
+  await expectSaved(page, "set", "Test");
 });
 
-test("une analyse IA lisant le nom et le numéro reste exploitable sans fiche catalogue", async ({
+test("langue : français par défaut, anglais optionnel conservé dans la description sans analyse IA", async ({
   page,
 }) => {
-  await page.route("https://api.tcgdex.net/**", (route) =>
-    route.fulfill({ json: [] }),
-  );
-  await page.route("**/api/vision", (route) =>
-    route.fulfill({
-      json: {
-        name: "Dracaufeu",
-        number: "4/102",
-        set: "",
-        variant: "",
-        condition: "EX",
-        confidence: "medium",
-        defects: [],
-        warnings: [],
-        photosSufficient: true,
-      },
-    }),
-  );
   await page.goto("/");
-  await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
-    .first()
-    .click();
-  await addPhotos(page);
+  await expect(page.locator('[data-field="language"]')).toHaveValue("fr");
   await page.locator(".analysis-options > summary").click();
-  await page.locator("#quick-ai").check();
-  await page.getByRole("button", { name: "Préparer ma carte" }).click();
-  await expect(page.locator("#job-status")).toContainText("Nom et numéro lus");
-  await expect(page.locator('[data-field="name"]')).toHaveValue("Dracaufeu");
-  await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
-  await expect(page.locator('[data-field="condition"]')).toHaveValue("EX");
+  await page.locator('[data-field="language"]').selectOption("en");
+  await addPhotos(page);
+  await page
+    .getByRole("button", { name: "Saisir les informations moi-même" })
+    .click();
+  await page.locator('[data-field="name"]').fill("Mew");
+  await page.locator('[data-field="number"]').fill("TG01/TG30");
+  await page.locator('[data-field="condition"]').selectOption("NM");
+  await page.locator('[data-field="price"]').fill("3");
+  await page.getByRole("button", { name: "Valider et remplir Vinted" }).click();
+  await expect(page.locator("#vinted-install")).toHaveAttribute("open", "");
+  await expectSaved(
+    page,
+    "description",
+    "Carte Pokémon Mew — TG01/TG30.\nLangue : EN.\nÉtat : Near Mint — quasi neuf.",
+  );
+  await page.reload();
+  await expect(page).toHaveURL(/\/review$/);
+  expect((await currentCard(page)).language).toBe("en");
 });
 
 test("séparateur non lu : le numéro est restauré par le nom et le total catalogue concordants", async ({
@@ -441,7 +431,7 @@ test("séparateur non lu : le numéro est restauré par le nom et le total catal
   await catalogue(page);
   await page.goto("/");
   await page
-    .getByRole("button", { name: "Ajouter une carte", exact: true })
+    .getByRole("button", { name: "Scanner", exact: true })
     .first()
     .click();
   await addPhotos(page, { name: "Dracaufeu", number: "4102" });
@@ -450,5 +440,5 @@ test("séparateur non lu : le numéro est restauré par le nom et le total catal
     timeout: 45000,
   });
   await expect(page.locator('[data-field="number"]')).toHaveValue("4/102");
-  await expect(page.locator('[data-field="set"]')).toHaveValue("Set de Base");
+  await expectSaved(page, "set", "Set de Base");
 });

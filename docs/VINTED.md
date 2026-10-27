@@ -2,12 +2,12 @@
 
 ## Installer une seule fois
 
-1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.4.3. Le compagnon reste en version 0.2.10 ; si cette version est déjà installée, aucune réinstallation n’est nécessaire pour corriger le titre. Pour une version plus ancienne, suivez les étapes ci-dessous.
-2. Préparer et valider une carte, puis ouvrir **Activer le remplissage Vinted** dans l’annonce.
+1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.5.0. Le compagnon reste en version 0.2.10 ; si cette version est déjà installée, aucune réinstallation n’est nécessaire pour le nouveau parcours. Pour une version plus ancienne, suivez les étapes ci-dessous.
+2. Préparer une carte, puis cliquer sur **Valider et remplir Vinted** dans la vérification. Si le compagnon manque, **Activer le remplissage Vinted** s’ouvre sur place.
 3. Cliquer sur **Télécharger l’extension Chrome / Edge**, puis décompresser le ZIP.
 4. Ouvrir `chrome://extensions` ou `edge://extensions` et activer le **mode développeur**.
 5. Cliquer sur **Charger l’extension non empaquetée** et choisir le dossier `poke-scan-sell-vinted` contenant `manifest.json`.
-6. Recharger l’application. Elle doit indiquer **Compagnon Vinted connecté**.
+6. Recharger l’application, puis cliquer à nouveau sur **Valider et remplir Vinted**.
 
 Le téléchargement associe le compagnon uniquement à l’adresse exacte de cette application. Si l’adresse du Codespace, le domaine ou le port change, télécharger à nouveau le compagnon depuis cette nouvelle adresse et recharger l’extension.
 
@@ -20,7 +20,7 @@ Mettre à jour l’application avec `git pull` ne change pas les fichiers de l�
 3. Dans `chrome://extensions` ou `edge://extensions`, cliquer sur la flèche circulaire **Recharger** de Poke Scan Sell — Vinted. La version doit être **0.2.10**.
 4. Recharger les onglets de l’application et de Vinted, puis relancer le transfert depuis l’application.
 
-L’application indique désormais la version connectée et propose la mise à jour si le compagnon est trop ancien. Le panneau dans Vinted affiche aussi sa version.
+L’application propose la mise à jour dans la vérification si le compagnon est trop ancien. Le panneau dans Vinted affiche aussi sa version.
 
 ## Texte de l’annonce
 
@@ -36,7 +36,7 @@ Les anciens brouillons prêts et non modifiés depuis leur génération sont mis
 
 ## Pour chaque carte
 
-Cliquer sur **Remplir mon annonce sur Vinted**. Le compagnon ouvre un nouvel onglet et transfère le titre et la description tels que corrigés par le vendeur, le prix et les originaux dans l’ordre recto, verso, détails. Si Vinted demande une connexion, elle se fait sur Vinted ; les informations restent en attente dans ce navigateur pendant trente minutes.
+Cliquer sur **Valider et remplir Vinted** dans la vérification. Le texte est préparé et le transfert démarre dans la même action, sans écran Annonce intermédiaire. Le compagnon ouvre un nouvel onglet et transfère le titre et la description tels que corrigés par le vendeur, le prix et les originaux dans l’ordre recto, verso, détails. Si Vinted demande une connexion, elle se fait sur Vinted ; les informations restent en attente dans ce navigateur pendant trente minutes.
 
 Le remplissage se fait dès que chaque champ est reconnu. Les photos peuvent être envoyées alors que les champs de texte sont encore désactivés ou absents. Les identifiants, noms entre crochets, libellés associés ou de conteneur et certains placeholders de prix sont pris en compte ; deux contrôles aussi plausibles restent signalés comme ambigus. Le champ de recherche du site est exclu. Le message indique les champs remplis et ceux encore attendus, puis un résultat partiel après le délai de vingt secondes pour les sections manquantes. Chaque échange avec l’extension a aussi un délai maximal, trente secondes pour une photo.
 
