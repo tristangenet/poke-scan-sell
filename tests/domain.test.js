@@ -151,7 +151,7 @@ test("OCR conserve préfixes et numéro complet", () => {
   assert.equal(parseOCR("Pikachu\nTG01/TG30").number, "TG01/TG30");
 });
 
-test("annonce : trois lignes exactes et langue absente du titre", () => {
+test("annonce : trois lignes exactes et titre limité au nom et au numéro", () => {
   const c = {
     ...card,
     name: "Grodoudou",
@@ -167,17 +167,19 @@ test("annonce : trois lignes exactes et langue absente du titre", () => {
   });
   const other = generateListing({
     ...c,
-    set: "Extension",
+    name: "Magirêve",
+    number: "212/193",
+    set: "Évolutions à Paldea",
     variant: "Holo",
     language: "en",
     condition: "EX",
     defects: ["Coins usés"],
     defectNotes: "Un petit point blanc",
   });
-  assert.equal(other.title, "Pokémon Grodoudou 105/094 — Extension — Holo");
+  assert.equal(other.title, "Pokémon Magirêve 212/193");
   assert.equal(
     other.description,
-    "Carte Pokémon Grodoudou — 105/094.\nLangue : EN.\nÉtat : Excellent — usure légère.",
+    "Carte Pokémon Magirêve — 212/193.\nLangue : EN.\nÉtat : Excellent — usure légère.",
   );
 });
 
@@ -238,6 +240,51 @@ test("ancien texte généré : mise à jour du brouillon sans écraser les corre
     const unchanged = migrateCard({ ...structuredClone(previous), ...changes });
     assert.equal(unchanged.title, previous.title);
     assert.equal(unchanged.description, previous.description);
+  }
+});
+test("titre généré avec extension ou variante : migration exacte sans perte des corrections ni des faits", () => {
+  for (const [set, variant] of [
+    ["Évolutions à Paldea", "Holo"],
+    ["Évolutions à Paldea", ""],
+    ["", "Holo"],
+  ]) {
+    const previous = {
+      ...card,
+      name: "Magirêve",
+      number: "212/193",
+      set,
+      variant,
+      status: "Prête",
+      price: 3,
+      description: "Ma description personnalisée.",
+      vintedTransferId: "old-transfer",
+      vintedTransferMessage: "Ancien texte envoyé",
+    };
+    previous.listingFingerprint = listingFingerprint(previous);
+    for (const language of ["", "FR"]) {
+      previous.title = ["Pokémon Magirêve 212/193", set, language, variant]
+        .filter(Boolean)
+        .join(" — ");
+      const updated = migrateCard(structuredClone(previous));
+      assert.equal(updated.title, "Pokémon Magirêve 212/193");
+      assert.equal(updated.description, previous.description);
+      assert.equal(updated.set, set);
+      assert.equal(updated.variant, variant);
+      assert.equal(updated.listingFingerprint, previous.listingFingerprint);
+      assert.equal(updated.listingFingerprint, listingFingerprint(updated));
+      assert.equal(updated.vintedTransferId, undefined);
+      assert.equal(updated.vintedTransferMessage, undefined);
+      for (const changes of [
+        { title: `${previous.title} — Mon lot` },
+        { status: "Publiée" },
+        { status: "Vendue" },
+        { status: "Archivée" },
+        { price: 5 },
+      ]) {
+        const original = { ...structuredClone(previous), ...changes };
+        assert.deepEqual(migrateCard(structuredClone(original)), original);
+      }
+    }
   }
 });
 test("liens externes sécurisés et domaine Vinted strict", () => {

@@ -1,4 +1,14 @@
-# Validation — version 0.4.2
+# Validation — version 0.4.3
+
+## Titre limité au nom et au numéro — 0.4.3
+
+Vérifications du 27 octobre 2026 : construction de production Vite réussie, **40 tests Node** et **deux parcours de transfert ciblés dans Chromium 153** réussis. La suite navigateur complète de la version précédente n’a pas été relancée pour cette correction de texte.
+
+Le générateur produit exactement `Pokémon Magirêve 212/193`, même avec l’extension « Évolutions à Paldea », la variante « Holo » et une langue renseignées. Les tests de migration couvrent les anciens titres avec ou sans langue, avec extension seule, variante seule ou les deux. Les métadonnées et l’empreinte restent identiques ; les titres personnalisés et les annonces publiées, vendues, archivées ou périmées sont conservés. Une mise à jour retire la référence à l’ancien transfert pour transmettre le titre actualisé.
+
+Les deux parcours utilisent les scripts réels du compagnon 0.2.10 et sa file IndexedDB, avec les APIs Chrome et les formulaires Vinted simulés. Un ancien brouillon Grodoudou conserve le format attendu ; un ancien brouillon Magirêve est ouvert, actualisé et transféré avec le titre réduit au nom et au numéro. Les deux formulaires reçoivent également la description exacte sur trois lignes, le prix `3`, l’état et les deux photos, sans clic Publier. Aucun compte Vinted ni annonce réelle n’a été utilisé. Le compagnon reste inchangé.
+
+Le navigateur de test a d’abord rencontré une erreur de polices Skia : la configuration du paquet Chromium cherchait ses polices dans des répertoires absents de cet environnement. Les deux parcours passent avec la configuration de polices du système. Le test du serveur a été relancé après la construction, dont il dépend ; les 40 tests Node passent dans cet ordre.
 
 ## Format des annonces Vinted — 0.4.2
 

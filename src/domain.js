@@ -173,9 +173,7 @@ export function readyErrors(c) {
 }
 export function generateListing(c) {
   return {
-    title: [`Pokémon ${c.name} ${c.number}`, c.set.trim(), c.variant.trim()]
-      .filter(Boolean)
-      .join(" — "),
+    title: `Pokémon ${c.name} ${c.number}`,
     description: [
       `Carte Pokémon ${c.name} — ${c.number}.`,
       `Langue : ${c.language.toUpperCase()}.`,
@@ -267,9 +265,16 @@ export function migrateCard(c) {
   ) {
     const previous = legacyGeneratedListing(c);
     const current = generateListing(c);
+    const previousTitle = [current.title, c.set.trim(), c.variant.trim()]
+      .filter(Boolean)
+      .join(" — ");
     let updated = false;
     for (const key of ["title", "description"])
-      if (c[key] === previous[key] && c[key] !== current[key]) {
+      if (
+        (c[key] === previous[key] ||
+          (key === "title" && c[key] === previousTitle)) &&
+        c[key] !== current[key]
+      ) {
         c[key] = current[key];
         updated = true;
       }

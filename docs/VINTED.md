@@ -2,7 +2,7 @@
 
 ## Installer une seule fois
 
-1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.4.2. Pour le format du prix entier, utilisez le compagnon 0.2.10 ; mettez à jour une extension existante en suivant les étapes ci-dessous.
+1. Mettre à jour et relancer l’application. Le pied de page doit afficher v0.4.3. Le compagnon reste en version 0.2.10 ; si cette version est déjà installée, aucune réinstallation n’est nécessaire pour corriger le titre. Pour une version plus ancienne, suivez les étapes ci-dessous.
 2. Préparer et valider une carte, puis ouvrir **Activer le remplissage Vinted** dans l’annonce.
 3. Cliquer sur **Télécharger l’extension Chrome / Edge**, puis décompresser le ZIP.
 4. Ouvrir `chrome://extensions` ou `edge://extensions` et activer le **mode développeur**.
@@ -24,7 +24,7 @@ L’application indique désormais la version connectée et propose la mise à j
 
 ## Texte de l’annonce
 
-Le titre ne contient plus la langue : par exemple **Pokémon Grodoudou 105/094**. L’extension et la variante, si renseignées, restent dans le titre. La description générée contient exactement ces trois lignes, avec le nom, le numéro, la langue et l’état de la carte :
+Le titre contient uniquement **Pokémon, le nom et le numéro complet**, par exemple **Pokémon Magirêve 212/193**. L’extension, la langue et la variante ne sont jamais ajoutées au titre généré. La description contient exactement ces trois lignes, avec le nom, le numéro, la langue et l’état de la carte :
 
 ```text
 Carte Pokémon Grodoudou — 105/094.

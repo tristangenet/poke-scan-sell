@@ -111,65 +111,87 @@ async function companion(
   return tabs;
 }
 
-test("annonce Grodoudou : description exacte, titre sans FR et prix 3 dans Vinted", async ({
-  page,
-  context,
-}) => {
-  const tabs = await companion(page, context);
-  await page.goto("/");
-  await page.evaluate(async (data) => {
-    const { newCard, generateListing, listingFingerprint } =
-      await import("/src/domain.js");
-    const { saveCard } = await import("/src/storage.js");
-    const card = Object.assign(newCard(), {
-      name: "Grodoudou",
-      number: "105/094",
-      language: "fr",
-      condition: "NM",
-      price: "3.00",
-      identityConfirmed: true,
-      conditionConfirmed: true,
-      status: "Prête",
-      photos: ["front", "back"].map((side) => ({
-        id: side,
-        side,
-        data,
-        type: "image/png",
-      })),
-    });
-    Object.assign(card, {
-      title: "Pokémon Grodoudou 105/094 — FR",
-      description:
-        "Carte Pokémon Grodoudou — 105/094.\nLangue : FR.\nÉtat évalué par le vendeur : Near Mint — quasi neuf.\nDéfauts constatés : aucun défaut signalé après vérification du vendeur.\nLes photos montrent l’exemplaire proposé à la vente.",
-      vintedTransferId: "previous-transfer",
-    });
-    card.listingFingerprint = listingFingerprint(card);
-    await saveCard(card);
-  }, data);
-  await page.reload();
-  await page.locator(".collection-card").first().click();
-  const description =
-    "Carte Pokémon Grodoudou — 105/094.\nLangue : FR.\nÉtat : Near Mint — quasi neuf.";
-  await expect(page.locator("#listing-preview-title")).toHaveText(
-    "Pokémon Grodoudou 105/094",
-  );
-  await expect(page.locator("#listing-preview-description")).toHaveText(
-    description,
-  );
-  await page
-    .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
-    .click();
-  await expect(page.locator("#vinted-transfer-status")).toContainText(
-    "Annonce envoyée",
-  );
-  const tab = tabs.get(1);
-  await expect(tab.locator("#title")).toHaveValue("Pokémon Grodoudou 105/094");
-  await expect(tab.locator("#description")).toHaveValue(description);
-  await expect(tab.locator("#price")).toHaveValue("3");
-  await expect(tab.locator("#photo-result")).toHaveText("2 photos reçues");
-  await expect(tab.locator("#status_id")).toHaveValue("very-good");
-  expect(await tab.evaluate(() => window.published)).toBe(0);
-});
+for (const sample of [
+  {
+    name: "Grodoudou",
+    number: "105/094",
+    set: "",
+    variant: "",
+    previousTitle: "Pokémon Grodoudou 105/094 — FR",
+    previousDescription:
+      "Carte Pokémon Grodoudou — 105/094.\nLangue : FR.\nÉtat évalué par le vendeur : Near Mint — quasi neuf.\nDéfauts constatés : aucun défaut signalé après vérification du vendeur.\nLes photos montrent l’exemplaire proposé à la vente.",
+  },
+  {
+    name: "Magirêve",
+    number: "212/193",
+    set: "Évolutions à Paldea",
+    variant: "Holo",
+    previousTitle: "Pokémon Magirêve 212/193 — Évolutions à Paldea — Holo",
+    previousDescription:
+      "Carte Pokémon Magirêve — 212/193.\nLangue : FR.\nÉtat : Near Mint — quasi neuf.",
+  },
+]) {
+  test(`annonce ${sample.name} : titre limité au nom et au numéro, description exacte et prix 3 dans Vinted`, async ({
+    page,
+    context,
+  }) => {
+    const tabs = await companion(page, context);
+    await page.goto("/");
+    await page.evaluate(
+      async ({ data, sample }) => {
+        const { newCard, listingFingerprint } = await import("/src/domain.js");
+        const { saveCard } = await import("/src/storage.js");
+        const card = Object.assign(newCard(), {
+          name: sample.name,
+          number: sample.number,
+          set: sample.set,
+          variant: sample.variant,
+          language: "fr",
+          condition: "NM",
+          price: "3.00",
+          identityConfirmed: true,
+          conditionConfirmed: true,
+          status: "Prête",
+          photos: ["front", "back"].map((side) => ({
+            id: side,
+            side,
+            data,
+            type: "image/png",
+          })),
+        });
+        Object.assign(card, {
+          title: sample.previousTitle,
+          description: sample.previousDescription,
+          vintedTransferId: "previous-transfer",
+        });
+        card.listingFingerprint = listingFingerprint(card);
+        await saveCard(card);
+      },
+      { data, sample },
+    );
+    await page.reload();
+    await page.locator(".collection-card").first().click();
+    const title = `Pokémon ${sample.name} ${sample.number}`;
+    const description = `Carte Pokémon ${sample.name} — ${sample.number}.\nLangue : FR.\nÉtat : Near Mint — quasi neuf.`;
+    await expect(page.locator("#listing-preview-title")).toHaveText(title);
+    await expect(page.locator("#listing-preview-description")).toHaveText(
+      description,
+    );
+    await page
+      .getByRole("button", { name: "Remplir mon annonce sur Vinted" })
+      .click();
+    await expect(page.locator("#vinted-transfer-status")).toContainText(
+      "Annonce envoyée",
+    );
+    const tab = tabs.get(1);
+    await expect(tab.locator("#title")).toHaveValue(title);
+    await expect(tab.locator("#description")).toHaveValue(description);
+    await expect(tab.locator("#price")).toHaveValue("3");
+    await expect(tab.locator("#photo-result")).toHaveText("2 photos reçues");
+    await expect(tab.locator("#status_id")).toHaveValue("very-good");
+    expect(await tab.evaluate(() => window.published)).toBe(0);
+  });
+}
 
 test("photos HEIC : conversion réelle, OCR, ZIP puis deux JPEG reçus par le formulaire Vinted", async ({
   page,

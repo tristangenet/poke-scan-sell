@@ -4,9 +4,11 @@ De la carte à l’annonce : photographiez une carte Pokémon, vérifiez ses inf
 
 ![Accueil de Poke Scan Sell](docs/screenshots/desktop.png)
 
-## Version 0.4.2 — annonces Vinted simplifiées
+## Version 0.4.3 — titres limités au nom et au numéro
 
-La version 0.4.2 génère une description sur trois lignes (carte, langue et état), retire la langue du titre et envoie un prix entier comme `3` sans décimales inutiles. Les anciens brouillons dont le texte est encore celui du générateur sont adaptés à l’ouverture ; les corrections personnelles sont conservées.
+Le titre généré contient uniquement **Pokémon, le nom et le numéro complet**, par exemple **Pokémon Magirêve 212/193**. L’extension, la langue et la variante (Holo, reverse…) ne sont pas ajoutées au titre. Les anciens titres générés sont adaptés à l’ouverture des brouillons ; les titres personnalisés et les annonces déjà publiées, vendues ou archivées sont conservés.
+
+Depuis la version 0.4.2, la description tient sur trois lignes (carte, langue et état), et un prix entier comme `3` est envoyé sans décimales inutiles. Ces formats sont conservés.
 
 Depuis la version 0.4.1, l’application accepte les photos **HEIC / HEIF**, y compris les fichiers `.HEIC` et ceux sans type MIME. Elles sont converties automatiquement en JPEG sur l’appareil, sans conversion manuelle, pour l’aperçu, l’OCR, les sauvegardes, le ZIP et le compagnon Vinted. La résolution est conservée. Les photos JPEG / PNG / WebP conservent leurs octets d’origine.
 
@@ -30,7 +32,7 @@ L’accueil explique les étapes et propose de reprendre un brouillon. **Mes car
 
 La saisie est enregistrée automatiquement après une courte pause et à la sortie d’un champ. Le champ actif et les volets ouverts restent en place. Le rechargement reprend la page et la carte en cours. Les erreurs apparaissent à côté des champs à compléter. Les réglages techniques, outils manuels et options avancées sont accessibles dans des volets secondaires.
 
-Cette version conserve les cartes et sauvegardes existantes. **Le compagnon Vinted passe en version 0.2.10** pour le format du prix. Téléchargez le nouveau ZIP depuis l’application, remplacez les fichiers dans le dossier de l’extension déjà chargée et cliquez sur **Recharger** dans `chrome://extensions` ou `edge://extensions`. Actualisez ensuite l’application et Vinted.
+Cette version conserve les cartes et sauvegardes existantes et utilise toujours le **compagnon Vinted 0.2.10**. La correction du titre ne nécessite pas de réinstaller ce compagnon. Pour une version plus ancienne, téléchargez le nouveau ZIP depuis l’application, remplacez les fichiers dans le dossier de l’extension déjà chargée et cliquez sur **Recharger** dans `chrome://extensions` ou `edge://extensions`. Actualisez ensuite l’application et Vinted.
 
 ## Ce qui fonctionne
 
@@ -77,7 +79,7 @@ npm ci
 HOST=0.0.0.0 npm start
 ```
 
-Actualiser l’onglet : le pied de page doit afficher **v0.4.2**.
+Actualiser l’onglet : le pied de page doit afficher **v0.4.3**.
 
 ## Remplir Vinted
 
